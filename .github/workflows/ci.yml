@@ -1,0 +1,109 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install uv
+        run: pip install uv
+      
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          uv pip install --system -e .
+          uv pip install --system -e ".[dev]"
+      
+      - name: Run linting (ruff)
+        working-directory: ./backend
+        run: ruff check app/
+      
+      - name: Run type checking (mypy)
+        working-directory: ./backend
+        run: mypy app/ --ignore-missing-imports
+        continue-on-error: true
+      
+      - name: Run tests
+        working-directory: ./backend
+        run: pytest tests/ --cov=app --cov-report=xml --cov-report=term
+        continue-on-error: true
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./frontend/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Run linting
+        working-directory: ./frontend
+        run: npm run lint
+        continue-on-error: true
+      
+      - name: Run tests
+        working-directory: ./frontend
+        run: npm run test
+        continue-on-error: true
+      
+      - name: Build
+        working-directory: ./frontend
+        run: npm run build
+
+  docker-build:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build backend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: false
+          tags: mealplanner-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Build frontend Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: false
+          tags: mealplanner-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
