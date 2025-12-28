@@ -1,5 +1,6 @@
 """Recipe endpoints."""
 
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_, select
@@ -167,7 +168,6 @@ async def delete_recipe(
             detail="Not authorized to delete this recipe",
         )
 
-    from datetime import datetime
     recipe.deleted_at = datetime.utcnow()
     await db.commit()
 

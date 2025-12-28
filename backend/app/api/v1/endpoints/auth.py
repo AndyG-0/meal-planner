@@ -5,6 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.dependencies import get_current_active_user
 from app.database import get_db
 from app.models import User
 from app.schemas import Token, UserCreate, UserResponse
@@ -81,8 +82,6 @@ async def login(
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(current_user: User = Depends(get_db)) -> User:
+async def get_me(current_user: User = Depends(get_current_active_user)) -> User:
     """Get current user information."""
-    from app.api.v1.dependencies import get_current_active_user
-    user = await get_current_active_user(current_user)
-    return user
+    return current_user

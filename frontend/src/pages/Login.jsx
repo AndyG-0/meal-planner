@@ -27,7 +27,10 @@ export default function Login() {
 
     try {
       const data = await authService.login(username, password)
-      setAuth(null, data.access_token, data.refresh_token)
+      // For now, set user to basic info from username
+      // In production, you'd fetch full user details
+      const user = { username }
+      setAuth(user, data.access_token, data.refresh_token)
       navigate('/')
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed')
