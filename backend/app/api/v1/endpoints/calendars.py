@@ -1,22 +1,21 @@
 """Calendar endpoints."""
 
 from datetime import datetime
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.dependencies import get_current_active_user
 from app.database import get_db
-from app.models import User, Calendar, CalendarMeal, Recipe
+from app.models import Calendar, CalendarMeal, Recipe, User
 from app.schemas import (
     CalendarCreate,
-    CalendarUpdate,
-    CalendarResponse,
     CalendarMealCreate,
     CalendarMealResponse,
+    CalendarResponse,
+    CalendarUpdate,
 )
-from app.api.v1.dependencies import get_current_active_user
 
 router = APIRouter(prefix="/calendars", tags=["Calendars"])
 
@@ -60,13 +59,13 @@ async def get_calendar(
     """Get a calendar by ID."""
     result = await db.execute(select(Calendar).where(Calendar.id == calendar_id))
     calendar = result.scalar_one_or_none()
-    
+
     if not calendar:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Calendar not found",
         )
-    
+
     # Check access permissions
     if calendar.owner_id != current_user.id:
         # TODO: Check group membership for shared calendars
@@ -74,7 +73,7 @@ async def get_calendar(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this calendar",
         )
-    
+
     return calendar
 
 
@@ -88,24 +87,24 @@ async def update_calendar(
     """Update a calendar."""
     result = await db.execute(select(Calendar).where(Calendar.id == calendar_id))
     calendar = result.scalar_one_or_none()
-    
+
     if not calendar:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Calendar not found",
         )
-    
+
     if calendar.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this calendar",
         )
-    
+
     # Update calendar fields
     update_data = calendar_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(calendar, field, value)
-    
+
     await db.commit()
     await db.refresh(calendar)
     return calendar
@@ -120,24 +119,28 @@ async def delete_calendar(
     """Delete a calendar."""
     result = await db.execute(select(Calendar).where(Calendar.id == calendar_id))
     calendar = result.scalar_one_or_none()
-    
+
     if not calendar:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Calendar not found",
         )
-    
+
     if calendar.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this calendar",
         )
-    
+
     await db.delete(calendar)
     await db.commit()
 
 
-@router.post("/{calendar_id}/meals", response_model=CalendarMealResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{calendar_id}/meals",
+    response_model=CalendarMealResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_meal_to_calendar(
     calendar_id: int,
     meal_data: CalendarMealCreate,
@@ -148,19 +151,19 @@ async def add_meal_to_calendar(
     # Check if calendar exists and user has permission
     result = await db.execute(select(Calendar).where(Calendar.id == calendar_id))
     calendar = result.scalar_one_or_none()
-    
+
     if not calendar:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Calendar not found",
         )
-    
+
     if calendar.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to modify this calendar",
         )
-    
+
     # Check if recipe exists
     result = await db.execute(
         select(Recipe).where(
@@ -169,13 +172,13 @@ async def add_meal_to_calendar(
         )
     )
     recipe = result.scalar_one_or_none()
-    
+
     if not recipe:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipe not found",
         )
-    
+
     # Create meal
     meal = CalendarMeal(
         calendar_id=calendar_id,
@@ -190,8 +193,8 @@ async def add_meal_to_calendar(
 @router.get("/{calendar_id}/meals", response_model=list[CalendarMealResponse])
 async def list_calendar_meals(
     calendar_id: int,
-    date_from: Optional[datetime] = Query(None),
-    date_to: Optional[datetime] = Query(None),
+    date_from: datetime | None = Query(None),
+    date_to: datetime | None = Query(None),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[CalendarMeal]:
@@ -199,27 +202,27 @@ async def list_calendar_meals(
     # Check if calendar exists and user has permission
     result = await db.execute(select(Calendar).where(Calendar.id == calendar_id))
     calendar = result.scalar_one_or_none()
-    
+
     if not calendar:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Calendar not found",
         )
-    
+
     if calendar.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this calendar",
         )
-    
+
     # Build query
     query = select(CalendarMeal).where(CalendarMeal.calendar_id == calendar_id)
-    
+
     if date_from:
         query = query.where(CalendarMeal.meal_date >= date_from)
     if date_to:
         query = query.where(CalendarMeal.meal_date <= date_to)
-    
+
     result = await db.execute(query)
     meals = result.scalars().all()
     return list(meals)
@@ -236,19 +239,19 @@ async def remove_meal_from_calendar(
     # Check if calendar exists and user has permission
     result = await db.execute(select(Calendar).where(Calendar.id == calendar_id))
     calendar = result.scalar_one_or_none()
-    
+
     if not calendar:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Calendar not found",
         )
-    
+
     if calendar.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to modify this calendar",
         )
-    
+
     # Get meal
     result = await db.execute(
         select(CalendarMeal).where(
@@ -257,12 +260,12 @@ async def remove_meal_from_calendar(
         )
     )
     meal = result.scalar_one_or_none()
-    
+
     if not meal:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Meal not found",
         )
-    
+
     await db.delete(meal)
     await db.commit()

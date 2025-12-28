@@ -1,7 +1,7 @@
 """Pydantic schemas for API validation."""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -23,8 +23,8 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     """User update schema."""
 
-    email: Optional[EmailStr] = None
-    password: Optional[str] = Field(None, min_length=8)
+    email: EmailStr | None = None
+    password: str | None = Field(None, min_length=8)
 
 
 class UserResponse(UserBase):
@@ -32,7 +32,7 @@ class UserResponse(UserBase):
 
     id: int
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -56,7 +56,7 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     """Token data schema."""
 
-    user_id: Optional[int] = None
+    user_id: int | None = None
 
 
 # Recipe Schemas
@@ -72,14 +72,14 @@ class RecipeBase(BaseModel):
     """Base recipe schema."""
 
     title: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: str | None = None
     ingredients: list[IngredientSchema]
     instructions: list[str]
     serving_size: int = 4
-    prep_time: Optional[int] = None
-    cook_time: Optional[int] = None
-    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
-    nutritional_info: Optional[dict[str, Any]] = None
+    prep_time: int | None = None
+    cook_time: int | None = None
+    difficulty: str | None = Field(None, pattern="^(easy|medium|hard)$")
+    nutritional_info: dict[str, Any] | None = None
     is_shared: bool = False
     is_public: bool = False
 
@@ -93,17 +93,17 @@ class RecipeCreate(RecipeBase):
 class RecipeUpdate(BaseModel):
     """Recipe update schema."""
 
-    title: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
-    ingredients: Optional[list[IngredientSchema]] = None
-    instructions: Optional[list[str]] = None
-    serving_size: Optional[int] = None
-    prep_time: Optional[int] = None
-    cook_time: Optional[int] = None
-    difficulty: Optional[str] = Field(None, pattern="^(easy|medium|hard)$")
-    nutritional_info: Optional[dict[str, Any]] = None
-    is_shared: Optional[bool] = None
-    is_public: Optional[bool] = None
+    title: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = None
+    ingredients: list[IngredientSchema] | None = None
+    instructions: list[str] | None = None
+    serving_size: int | None = None
+    prep_time: int | None = None
+    cook_time: int | None = None
+    difficulty: str | None = Field(None, pattern="^(easy|medium|hard)$")
+    nutritional_info: dict[str, Any] | None = None
+    is_shared: bool | None = None
+    is_public: bool | None = None
 
 
 class RecipeResponse(RecipeBase):
@@ -111,9 +111,9 @@ class RecipeResponse(RecipeBase):
 
     id: int
     owner_id: int
-    image_url: Optional[str] = None
+    image_url: str | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -123,7 +123,7 @@ class RecipeTagCreate(BaseModel):
     """Recipe tag creation schema."""
 
     tag_name: str = Field(..., min_length=1, max_length=50)
-    tag_category: Optional[str] = Field(None, max_length=50)
+    tag_category: str | None = Field(None, max_length=50)
 
 
 class RecipeTagResponse(RecipeTagCreate):
@@ -140,7 +140,7 @@ class RecipeRatingCreate(BaseModel):
     """Recipe rating creation schema."""
 
     rating: int = Field(..., ge=1, le=5)
-    review: Optional[str] = None
+    review: str | None = None
 
 
 class RecipeRatingResponse(RecipeRatingCreate):
@@ -160,7 +160,7 @@ class CalendarBase(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=100)
     is_shared: bool = False
-    group_id: Optional[int] = None
+    group_id: int | None = None
 
 
 class CalendarCreate(CalendarBase):
@@ -172,8 +172,8 @@ class CalendarCreate(CalendarBase):
 class CalendarUpdate(BaseModel):
     """Calendar update schema."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    is_shared: Optional[bool] = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+    is_shared: bool | None = None
 
 
 class CalendarResponse(CalendarBase):
@@ -182,7 +182,7 @@ class CalendarResponse(CalendarBase):
     id: int
     owner_id: int
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -222,7 +222,7 @@ class GroupCreate(GroupBase):
 class GroupUpdate(BaseModel):
     """Group update schema."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    name: str | None = Field(None, min_length=1, max_length=100)
 
 
 class GroupResponse(GroupBase):
@@ -231,7 +231,7 @@ class GroupResponse(GroupBase):
     id: int
     owner_id: int
     created_at: datetime
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -242,7 +242,7 @@ class GroupMemberCreate(BaseModel):
 
     user_id: int
     role: str = "member"
-    permissions: Optional[dict[str, bool]] = None
+    permissions: dict[str, bool] | None = None
 
 
 class GroupMemberResponse(GroupMemberCreate):
@@ -262,7 +262,7 @@ class GroceryListItem(BaseModel):
     name: str
     quantity: float
     unit: str
-    category: Optional[str] = None
+    category: str | None = None
     checked: bool = False
 
 
@@ -270,8 +270,8 @@ class GroceryListCreate(BaseModel):
     """Grocery list creation schema."""
 
     name: str = Field(..., min_length=1, max_length=100)
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
 
 
 class GroceryListResponse(BaseModel):
@@ -280,8 +280,8 @@ class GroceryListResponse(BaseModel):
     id: int
     user_id: int
     name: str
-    date_from: Optional[datetime] = None
-    date_to: Optional[datetime] = None
+    date_from: datetime | None = None
+    date_to: datetime | None = None
     items: list[GroceryListItem]
     created_at: datetime
 
@@ -294,14 +294,14 @@ class PantryInventoryCreate(BaseModel):
 
     ingredient_name: str = Field(..., min_length=1, max_length=100)
     quantity: float = Field(..., gt=0)
-    unit: Optional[str] = Field(None, max_length=50)
+    unit: str | None = Field(None, max_length=50)
 
 
 class PantryInventoryUpdate(BaseModel):
     """Pantry inventory update schema."""
 
     quantity: float = Field(..., gt=0)
-    unit: Optional[str] = Field(None, max_length=50)
+    unit: str | None = Field(None, max_length=50)
 
 
 class PantryInventoryResponse(PantryInventoryCreate):
@@ -309,6 +309,6 @@ class PantryInventoryResponse(PantryInventoryCreate):
 
     id: int
     user_id: int
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}

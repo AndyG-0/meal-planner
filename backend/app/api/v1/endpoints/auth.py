@@ -2,13 +2,18 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import User
-from app.schemas import UserCreate, UserResponse, Token
-from app.utils.auth import verify_password, get_password_hash, create_access_token, create_refresh_token
+from app.schemas import Token, UserCreate, UserResponse
+from app.utils.auth import (
+    create_access_token,
+    create_refresh_token,
+    get_password_hash,
+    verify_password,
+)
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -23,7 +28,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) ->
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered",
         )
-    
+
     # Check if email exists
     result = await db.execute(select(User).where(User.email == user_data.email))
     if result.scalar_one_or_none():
@@ -31,7 +36,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) ->
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
         )
-    
+
     # Create new user
     user = User(
         username=user_data.username,
@@ -41,7 +46,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) ->
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    
+
     return user
 
 
@@ -56,18 +61,18 @@ async def login(
         select(User).where(User.username == form_data.username, User.deleted_at.is_(None))
     )
     user = result.scalar_one_or_none()
-    
+
     if not user or not verify_password(form_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Create access token
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
-    
+
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,

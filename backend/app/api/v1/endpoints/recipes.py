@@ -1,21 +1,20 @@
 """Recipe endpoints."""
 
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
 
+from app.api.v1.dependencies import get_current_active_user
 from app.database import get_db
-from app.models import User, Recipe, RecipeTag, UserFavorite
+from app.models import Recipe, RecipeTag, User, UserFavorite
 from app.schemas import (
     RecipeCreate,
-    RecipeUpdate,
     RecipeResponse,
     RecipeTagCreate,
     RecipeTagResponse,
+    RecipeUpdate,
 )
-from app.api.v1.dependencies import get_current_active_user
 
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
 
@@ -41,8 +40,8 @@ async def create_recipe(
 async def list_recipes(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=100),
-    search: Optional[str] = None,
-    tags: Optional[str] = None,
+    search: str | None = None,
+    tags: str | None = None,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ) -> list[Recipe]:
@@ -51,11 +50,11 @@ async def list_recipes(
         Recipe.deleted_at.is_(None),
         or_(
             Recipe.owner_id == current_user.id,
-            Recipe.is_public == True,
-            Recipe.is_shared == True,
+            Recipe.is_public,
+            Recipe.is_shared,
         ),
     )
-    
+
     # Apply search filter
     if search:
         search_pattern = f"%{search}%"
@@ -65,7 +64,7 @@ async def list_recipes(
                 Recipe.description.ilike(search_pattern),
             )
         )
-    
+
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     recipes = result.scalars().all()
@@ -86,20 +85,20 @@ async def get_recipe(
         )
     )
     recipe = result.scalar_one_or_none()
-    
+
     if not recipe:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipe not found",
         )
-    
+
     # Check access permissions
     if recipe.owner_id != current_user.id and not recipe.is_public and not recipe.is_shared:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this recipe",
         )
-    
+
     return recipe
 
 
@@ -118,24 +117,24 @@ async def update_recipe(
         )
     )
     recipe = result.scalar_one_or_none()
-    
+
     if not recipe:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipe not found",
         )
-    
+
     if recipe.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this recipe",
         )
-    
+
     # Update recipe fields
     update_data = recipe_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(recipe, field, value)
-    
+
     await db.commit()
     await db.refresh(recipe)
     return recipe
@@ -155,25 +154,29 @@ async def delete_recipe(
         )
     )
     recipe = result.scalar_one_or_none()
-    
+
     if not recipe:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipe not found",
         )
-    
+
     if recipe.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this recipe",
         )
-    
+
     from datetime import datetime
     recipe.deleted_at = datetime.utcnow()
     await db.commit()
 
 
-@router.post("/{recipe_id}/tags", response_model=RecipeTagResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{recipe_id}/tags",
+    response_model=RecipeTagResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def add_recipe_tag(
     recipe_id: int,
     tag_data: RecipeTagCreate,
@@ -189,19 +192,19 @@ async def add_recipe_tag(
         )
     )
     recipe = result.scalar_one_or_none()
-    
+
     if not recipe:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipe not found",
         )
-    
+
     if recipe.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to modify this recipe",
         )
-    
+
     # Create tag
     tag = RecipeTag(
         recipe_id=recipe_id,
@@ -217,7 +220,7 @@ async def add_recipe_tag(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Tag already exists for this recipe",
         )
-    
+
     return tag
 
 
@@ -236,13 +239,13 @@ async def favorite_recipe(
         )
     )
     recipe = result.scalar_one_or_none()
-    
+
     if not recipe:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipe not found",
         )
-    
+
     # Create favorite
     favorite = UserFavorite(
         user_id=current_user.id,
@@ -257,7 +260,7 @@ async def favorite_recipe(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Recipe already in favorites",
         )
-    
+
     return {"message": "Recipe added to favorites"}
 
 
@@ -275,12 +278,12 @@ async def unfavorite_recipe(
         )
     )
     favorite = result.scalar_one_or_none()
-    
+
     if not favorite:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipe not in favorites",
         )
-    
+
     await db.delete(favorite)
     await db.commit()

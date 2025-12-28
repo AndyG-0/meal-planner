@@ -1,15 +1,13 @@
 """Authentication and authorization dependencies."""
 
-from typing import Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import User
-from app.schemas import TokenData
 from app.utils.auth import decode_token
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -25,22 +23,24 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     payload = decode_token(token)
     if payload is None:
         raise credentials_exception
-    
-    user_id: Optional[int] = payload.get("sub")
+
+    user_id: int | None = payload.get("sub")
     if user_id is None:
         raise credentials_exception
-    
+
     # Fetch user from database
-    result = await db.execute(select(User).where(User.id == int(user_id), User.deleted_at.is_(None)))
+    result = await db.execute(
+        select(User).where(User.id == int(user_id), User.deleted_at.is_(None))
+    )
     user = result.scalar_one_or_none()
-    
+
     if user is None:
         raise credentials_exception
-    
+
     return user
 
 

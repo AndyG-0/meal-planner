@@ -1,16 +1,14 @@
 """Grocery list endpoints."""
 
-from datetime import datetime
-from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
-from app.models import User, GroceryList, Calendar, CalendarMeal, Recipe
-from app.schemas import GroceryListCreate, GroceryListResponse, GroceryListItem
 from app.api.v1.dependencies import get_current_active_user
+from app.database import get_db
+from app.models import Calendar, CalendarMeal, GroceryList, Recipe, User
+from app.schemas import GroceryListCreate, GroceryListResponse
 
 router = APIRouter(prefix="/grocery-lists", tags=["Grocery Lists"])
 
@@ -18,13 +16,13 @@ router = APIRouter(prefix="/grocery-lists", tags=["Grocery Lists"])
 def consolidate_ingredients(recipes: list[Recipe]) -> list[dict]:
     """Consolidate ingredients from multiple recipes."""
     ingredient_map = {}
-    
+
     for recipe in recipes:
         for ingredient in recipe.ingredients:
             name = ingredient["name"].lower()
             quantity = float(ingredient["quantity"])
             unit = ingredient["unit"]
-            
+
             if name in ingredient_map:
                 # Simple consolidation - same unit
                 if ingredient_map[name]["unit"] == unit:
@@ -51,7 +49,7 @@ def consolidate_ingredients(recipes: list[Recipe]) -> list[dict]:
                     "category": None,
                     "checked": False,
                 }
-    
+
     return list(ingredient_map.values())
 
 
@@ -68,30 +66,30 @@ async def create_grocery_list(
         select(Calendar).where(Calendar.id == calendar_id)
     )
     calendar = result.scalar_one_or_none()
-    
+
     if not calendar:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Calendar not found",
         )
-    
+
     if calendar.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this calendar",
         )
-    
+
     # Get meals in date range
     query = select(CalendarMeal).where(CalendarMeal.calendar_id == calendar_id)
-    
+
     if list_data.date_from:
         query = query.where(CalendarMeal.meal_date >= list_data.date_from)
     if list_data.date_to:
         query = query.where(CalendarMeal.meal_date <= list_data.date_to)
-    
+
     result = await db.execute(query)
     meals = result.scalars().all()
-    
+
     # Get recipes
     recipe_ids = [meal.recipe_id for meal in meals]
     result = await db.execute(
@@ -101,10 +99,10 @@ async def create_grocery_list(
         )
     )
     recipes = result.scalars().all()
-    
+
     # Consolidate ingredients
     items = consolidate_ingredients(list(recipes))
-    
+
     # Create grocery list
     grocery_list = GroceryList(
         user_id=current_user.id,
@@ -116,7 +114,7 @@ async def create_grocery_list(
     db.add(grocery_list)
     await db.commit()
     await db.refresh(grocery_list)
-    
+
     return grocery_list
 
 
@@ -144,19 +142,19 @@ async def get_grocery_list(
         select(GroceryList).where(GroceryList.id == list_id)
     )
     grocery_list = result.scalar_one_or_none()
-    
+
     if not grocery_list:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Grocery list not found",
         )
-    
+
     if grocery_list.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this grocery list",
         )
-    
+
     return grocery_list
 
 
@@ -171,18 +169,18 @@ async def delete_grocery_list(
         select(GroceryList).where(GroceryList.id == list_id)
     )
     grocery_list = result.scalar_one_or_none()
-    
+
     if not grocery_list:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Grocery list not found",
         )
-    
+
     if grocery_list.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this grocery list",
         )
-    
+
     await db.delete(grocery_list)
     await db.commit()

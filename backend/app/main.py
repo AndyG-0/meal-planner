@@ -3,8 +3,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.endpoints import auth, calendars, grocery_lists, recipes
 from app.config import settings
-from app.api.v1.endpoints import auth, recipes, calendars, grocery_lists
 
 # Create FastAPI app
 app = FastAPI(
