@@ -43,8 +43,9 @@ jobs:
       
       - name: Run tests
         working-directory: ./backend
-        run: pytest tests/ --cov=app --cov-report=xml --cov-report=term
+        run: pytest tests/ --cov=app --cov-report=xml --cov-report=term --timeout=300
         continue-on-error: true
+        timeout-minutes: 10
 
   frontend-tests:
     name: Frontend Tests

@@ -1,9 +1,9 @@
 """Test configuration and fixtures."""
 
 import pytest
-from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.database import Base, get_db
 from app.main import app
@@ -11,49 +11,48 @@ from app.main import app
 # Test database URL
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
-# Create test engine
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 
-# Create test session factory
-TestSessionLocal = sessionmaker(
-    test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
-
-
-async def override_get_db():
-    """Override get_db dependency for tests."""
-    async with TestSessionLocal() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
-
-
-@pytest.fixture
-async def db_session():
-    """Create test database session."""
-    async with test_engine.begin() as conn:
+@pytest_asyncio.fixture(scope="function")
+async def test_engine():
+    """Create a test database engine."""
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False, pool_pre_ping=True)
+    
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     
-    async with TestSessionLocal() as session:
-        yield session
+    yield engine
     
-    async with test_engine.begin() as conn:
+    async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    
+    await engine.dispose()
 
 
-@pytest.fixture
-async def client(db_session):
+@pytest_asyncio.fixture(scope="function")
+async def db_session(test_engine):
+    """Create test database session."""
+    async_session = async_sessionmaker(
+        test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+    
+    async with async_session() as session:
+        yield session
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client(test_engine):
     """Create test client."""
-    from httpx import ASGITransport
+    async_session = async_sessionmaker(
+        test_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+    
+    async def override_get_db():
+        async with async_session() as session:
+            yield session
     
     app.dependency_overrides[get_db] = override_get_db
     

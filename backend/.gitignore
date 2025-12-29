@@ -49,3 +49,4 @@ uploads/
 # Alembic
 alembic/versions/*.pyc
 venv/
+test_venv/
