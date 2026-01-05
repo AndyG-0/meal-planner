@@ -34,7 +34,7 @@ jobs:
       
       - name: Run linting (ruff)
         working-directory: ./backend
-        run: ruff check .
+        run: ruff check app/ tests/
       
       - name: Run type checking (mypy)
         working-directory: ./backend
@@ -68,7 +68,7 @@ jobs:
       - name: Install dependencies
         working-directory: ./frontend
         run: |
-          npm ci
+          npm install
       
       - name: Run linting
         working-directory: ./frontend

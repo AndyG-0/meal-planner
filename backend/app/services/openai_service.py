@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 import httpx
-
+from bs4 import BeautifulSoup
 from openai import AsyncOpenAI
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -936,10 +936,6 @@ Create recipes based solely on their requests without dietary restrictions.
                 logger.debug(f"Response length: {len(response.text)} characters")
 
                 # Parse HTML
-                if BeautifulSoup is None:
-                    raise RuntimeError(
-                        "beautifulsoup4 is required for fetch_url; install it to enable HTML parsing"
-                    )
                 soup = BeautifulSoup(response.text, "html.parser")
 
                 # Get title
