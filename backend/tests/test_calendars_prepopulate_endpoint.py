@@ -1,6 +1,8 @@
-import pytest
 from datetime import datetime
-from app.models import User, Recipe, RecipeTag, Calendar
+
+import pytest
+
+from app.models import Calendar, Recipe, User
 from app.utils.auth import create_access_token
 
 

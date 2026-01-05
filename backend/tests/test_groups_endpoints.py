@@ -4,7 +4,7 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Group, GroupMember, User
+from app.models import User
 from app.utils.auth import create_access_token, get_password_hash
 
 

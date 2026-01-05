@@ -1,6 +1,7 @@
 import pytest
+
+from app.models import Recipe, RecipeTag, User
 from app.utils.auth import create_access_token
-from app.models import User, Recipe, RecipeTag
 
 
 @pytest.mark.asyncio

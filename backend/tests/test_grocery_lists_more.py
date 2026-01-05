@@ -1,8 +1,9 @@
-import io
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
+
 from app.api.v1.endpoints.grocery_lists import consolidate_ingredients
-from app.models import Recipe, Calendar, CalendarMeal
+from app.models import CalendarMeal, Recipe
 
 
 def test_consolidate_ingredients_basic():

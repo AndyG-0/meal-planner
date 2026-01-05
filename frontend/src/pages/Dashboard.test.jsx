@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Dashboard from './Dashboard';
-import { recipeService, calendarService } from '../services';
 
 vi.mock('../services', () => ({
   recipeService: {
@@ -11,6 +10,9 @@ vi.mock('../services', () => ({
   calendarService: {
     getCalendars: vi.fn(),
     getCalendarMeals: vi.fn(),
+  },
+  groceryListService: {
+    getGroceryList: vi.fn(),
   },
 }));
 
@@ -23,9 +25,6 @@ vi.mock('../store/authStore', () => ({
 describe('Dashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    recipeService.getRecipes.mockResolvedValue({ items: [], pagination: {} });
-    calendarService.getCalendars.mockResolvedValue([]);
-    calendarService.getCalendarMeals.mockResolvedValue([]);
   });
 
   it('should render dashboard component', async () => {

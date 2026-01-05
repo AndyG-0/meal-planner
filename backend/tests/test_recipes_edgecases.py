@@ -1,13 +1,11 @@
-import json
 import builtins
-import io
-import os
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.utils.auth import create_access_token, get_password_hash
 from app.models import Recipe, User
+from app.utils.auth import get_password_hash
 
 
 @pytest.mark.asyncio

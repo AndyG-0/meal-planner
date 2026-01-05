@@ -1,9 +1,9 @@
-import os
-import json
-import pytest
 from pathlib import Path
+
+import pytest
+
+from app.models import Recipe, RecipeTag, User, UserFavorite
 from app.utils.auth import create_access_token
-from app.models import User, Recipe, RecipeTag, UserFavorite
 
 
 @pytest.mark.asyncio

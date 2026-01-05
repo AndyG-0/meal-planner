@@ -1,10 +1,11 @@
-import json
-import os
 import io
+import json
+
 import pytest
 from httpx import AsyncClient
+
+from app.models import Recipe, User
 from app.utils.auth import create_access_token
-from app.models import Recipe, RecipeTag, User, UserFavorite, RecipeRating
 
 
 @pytest.mark.asyncio

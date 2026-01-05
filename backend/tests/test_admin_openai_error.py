@@ -1,10 +1,11 @@
 import pytest
+
 from app.utils.auth import create_access_token
 
 
 @pytest.mark.asyncio
 async def test_openai_models_error(client, db_session, monkeypatch):
-    from app.models import User, OpenAISettings
+    from app.models import OpenAISettings, User
 
     admin = User(username="openerr", email="oe@example.com", password_hash="x", is_admin=True)
     db_session.add(admin)
@@ -19,10 +20,14 @@ async def test_openai_models_error(client, db_session, monkeypatch):
         def __init__(self, api_key=None):
             self.api_key = api_key
 
-        class models:
+        class Models:
             @staticmethod
             async def list():
                 raise Exception("service down")
+
+        @property
+        def models(self):
+            return self.Models
 
     monkeypatch.setattr("openai.AsyncOpenAI", FakeAsyncOpenAI)
 

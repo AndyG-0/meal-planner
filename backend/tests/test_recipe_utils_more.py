@@ -1,4 +1,5 @@
 import pytest
+
 from app.api.v1.endpoints.recipes import clean_ingredient_data
 
 
@@ -23,7 +24,6 @@ def test_clean_ingredient_parsing_various():
 @pytest.mark.asyncio
 async def test_list_recipes_dietary_filter(client, db_session, test_user, test_token):
     # create recipe with tag matching dietary
-    r = Recipe = None
     from app.models import Recipe, RecipeTag
 
     r1 = Recipe(title="VD", owner_id=test_user.id, category="dinner", visibility="public", ingredients=[], instructions=[])

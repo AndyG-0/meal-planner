@@ -1,6 +1,7 @@
 import pytest
+
+from app.models import User
 from app.utils.auth import create_access_token
-from app.models import User, FeatureToggle
 
 
 @pytest.mark.asyncio

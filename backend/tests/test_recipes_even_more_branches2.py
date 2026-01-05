@@ -1,5 +1,7 @@
-import pytest
 import io
+
+import pytest
+
 from app.models import Recipe, RecipeTag
 
 
@@ -12,11 +14,11 @@ async def test_list_recipes_difficulty_and_cook_time_filters(client, db_session,
 
     resp = await client.get("/api/v1/recipes?difficulty=easy", headers={"Authorization": f"Bearer {test_token}"})
     assert resp.status_code == 200
-    assert all(item["difficulty"] == "easy" for item in resp.json()["items"]) or any(item["title"] == "D1" for item in resp.json()["items"]) 
+    assert all(item["difficulty"] == "easy" for item in resp.json()["items"]) or any(item["title"] == "D1" for item in resp.json()["items"])
 
     resp2 = await client.get("/api/v1/recipes?max_cook_time=30", headers={"Authorization": f"Bearer {test_token}"})
     assert resp2.status_code == 200
-    assert all((item.get("cook_time") is None or item["cook_time"] <= 30) for item in resp2.json()["items"]) 
+    assert all((item.get("cook_time") is None or item["cook_time"] <= 30) for item in resp2.json()["items"])
 
 
 @pytest.mark.asyncio
@@ -37,7 +39,7 @@ async def test_tags_multiple_and_upload_default_extension(client, db_session, te
     resp = await client.get("/api/v1/recipes?tags=a,b", headers={"Authorization": f"Bearer {test_token}"})
     assert resp.status_code == 200
     # should have at least one of the tagged recipes
-    assert any(item["title"] in ("TagA","TagB") for item in resp.json()["items"]) 
+    assert any(item["title"] in ("TagA","TagB") for item in resp.json()["items"])
 
     # test upload with filename missing extension
     r3 = Recipe(title="ImgNoExt", owner_id=test_user.id, ingredients=[], instructions=[], visibility="private")

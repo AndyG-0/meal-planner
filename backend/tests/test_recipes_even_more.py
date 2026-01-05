@@ -1,8 +1,8 @@
-import pytest
-from datetime import datetime
-from app.models import User, Recipe, RecipeTag, Group, GroupMember
-from app.utils.auth import create_access_token
 import io
+
+import pytest
+
+from app.models import Group, GroupMember, Recipe, RecipeTag, User
 
 
 @pytest.mark.asyncio
@@ -55,7 +55,7 @@ async def test_tags_filter_and_get_all_tags(client, db_session, test_user, test_
     # filter by tag a
     resp = await client.get("/api/v1/recipes?tags=a", headers={"Authorization": f"Bearer {test_token}"})
     assert resp.status_code == 200
-    assert any(item["title"] == "T1" for item in resp.json()["items"]) 
+    assert any(item["title"] == "T1" for item in resp.json()["items"])
 
     # get all tags
     resp2 = await client.get("/api/v1/recipes/tags/all", headers={"Authorization": f"Bearer {test_token}"})
@@ -67,7 +67,6 @@ async def test_tags_filter_and_get_all_tags(client, db_session, test_user, test_
 @pytest.mark.asyncio
 async def test_group_visibility_and_update_by_admin(client, db_session, test_user, test_token):
     # create group and group recipe owned by other user
-    owner = test_user
     other = User(username="gowner", email="gowner@example.com", password_hash="x")
     db_session.add(other)
     await db_session.commit()

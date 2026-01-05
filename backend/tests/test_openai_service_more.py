@@ -1,6 +1,7 @@
 import pytest
+
+from app.models import FeatureToggle, OpenAISettings, User
 from app.services.openai_service import OpenAIService
-from app.models import User, OpenAISettings, FeatureToggle, RecipeTag, Recipe
 
 
 @pytest.mark.asyncio

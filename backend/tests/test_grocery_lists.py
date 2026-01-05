@@ -1,5 +1,6 @@
-import pytest
 from types import SimpleNamespace
+
+import pytest
 
 
 @pytest.mark.asyncio
@@ -18,8 +19,9 @@ async def test_consolidate_ingredients():
 
 @pytest.mark.asyncio
 async def test_create_grocery_list_and_export(client, db_session, test_user, test_token):
-    from app.models import Calendar, CalendarMeal, Recipe, GroceryList
-    from datetime import datetime, timedelta
+    from datetime import datetime
+
+    from app.models import Calendar, CalendarMeal, Recipe
 
     # Create a recipe with ingredients
     r = Recipe(title="R1", owner_id=test_user.id, ingredients=[{"name": "Tomato", "quantity": 2, "unit": "pcs"}], instructions=["a"], prep_time=1, cook_time=1, serving_size=1)
@@ -64,7 +66,7 @@ async def test_create_grocery_list_and_export(client, db_session, test_user, tes
 
 @pytest.mark.asyncio
 async def test_create_grocery_list_permission_denied(client, db_session, test_user, test_token):
-    from app.models import Calendar, Recipe
+    from app.models import Calendar
 
     other = SimpleNamespace(id=9999)
 

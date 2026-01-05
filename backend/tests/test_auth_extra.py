@@ -1,6 +1,7 @@
 import pytest
+
+from app.models import User
 from app.utils.auth import get_password_hash
-from app.models import User, PasswordResetToken
 
 
 @pytest.mark.asyncio

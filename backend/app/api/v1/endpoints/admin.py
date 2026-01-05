@@ -40,7 +40,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 def require_admin(current_user: Annotated[User, Depends(get_current_user)]) -> User:
     """Dependency to require admin privileges."""
-    if not current_user.is_admin:
+    if not bool(current_user.is_admin):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Admin privileges required"
         )

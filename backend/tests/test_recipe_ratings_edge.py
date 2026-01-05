@@ -4,13 +4,13 @@ import pytest
 @pytest.mark.asyncio
 async def test_delete_nonexistent_rating(client, test_user, test_token):
     # Try deleting rating when none exists
-    resp = await client.delete(f"/api/v1/recipes/99999/ratings", headers={"Authorization": f"Bearer {test_token}"})
+    resp = await client.delete("/api/v1/recipes/99999/ratings", headers={"Authorization": f"Bearer {test_token}"})
     assert resp.status_code == 404
 
 
 @pytest.mark.asyncio
 async def test_rating_update_and_conflict(client, test_user, test_token, db_session):
-    from app.models import Recipe, RecipeRating
+    from app.models import Recipe
 
     r = Recipe(title="RateX", owner_id=test_user.id, ingredients=[], instructions=[], visibility="public")
     db_session.add(r)

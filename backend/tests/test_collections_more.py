@@ -1,5 +1,6 @@
 import pytest
-from app.models import Recipe, RecipeCollection, RecipeCollectionItem
+
+from app.models import Recipe
 
 
 @pytest.mark.asyncio

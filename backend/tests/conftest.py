@@ -1,5 +1,7 @@
 """Test configuration and fixtures."""
 
+import os
+
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -40,7 +42,6 @@ async def db_session(test_engine):
         yield session
 
 
-import os
 os.environ.setdefault("TESTING", "1")
 
 @pytest_asyncio.fixture(scope="function")

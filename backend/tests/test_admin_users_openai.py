@@ -1,6 +1,7 @@
 import pytest
+
+from app.models import OpenAISettings, User
 from app.utils.auth import create_access_token
-from app.models import User, OpenAISettings
 
 
 @pytest.mark.asyncio
@@ -67,10 +68,14 @@ async def test_list_users_pagination_and_openai_models_success_and_failure(monke
         def __init__(self, api_key=None):
             self.api_key = api_key
 
-        class models:
+        class Models:
             @staticmethod
             async def list():
                 return DummyModelsResp([DummyModel("gpt-4-test"), DummyModel("gpt-3.5-test")])
+
+        @property
+        def models(self):
+            return self.Models
 
     # monkeypatch the import used inside the endpoint
     monkeypatch.setattr("openai.AsyncOpenAI", DummyClient, raising=False)

@@ -1,6 +1,8 @@
-import pytest
 from datetime import datetime
-from app.models import User, Calendar, CalendarMeal, Recipe, GroceryList
+
+import pytest
+
+from app.models import Calendar, CalendarMeal, GroceryList, Recipe, User
 from app.utils.auth import get_password_hash
 
 
@@ -56,7 +58,7 @@ async def test_create_list_and_exports(client, db_session, test_user, test_token
 
 @pytest.mark.asyncio
 async def test_create_list_calendar_not_found(client, test_user, test_token):
-    resp = await client.post(f"/api/v1/grocery-lists?calendar_id=9999", json={"name": "GLX"}, headers={"Authorization": f"Bearer {test_token}"})
+    resp = await client.post("/api/v1/grocery-lists?calendar_id=9999", json={"name": "GLX"}, headers={"Authorization": f"Bearer {test_token}"})
     assert resp.status_code == 404
 
 

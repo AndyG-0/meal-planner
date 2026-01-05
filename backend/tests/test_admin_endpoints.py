@@ -126,7 +126,7 @@ async def test_admin_user_management_and_recipe_admin_endpoints(client: AsyncCli
     await db_session.commit()
 
     # Create recipe owned by u1
-    r = Recipe(title="AdminR", owner_id=u1.id, ingredients=[{"name":"x","quantity":1,"unit":"unit"}], instructions=["a"]) 
+    r = Recipe(title="AdminR", owner_id=u1.id, ingredients=[{"name":"x","quantity":1,"unit":"unit"}], instructions=["a"])
     db_session.add(r)
     await db_session.commit()
 
@@ -216,12 +216,14 @@ async def test_openai_settings_and_models(client: AsyncClient, db_session: Async
         def __init__(self, *args, **kwargs):
             pass
 
-        async def models(self):
-            return None
-
-        class models:
+        class Models:
+            @staticmethod
             async def list():
                 return FakeModels([FakeModel("gpt-3.5-turbo")])
+
+        @property
+        def models(self):
+            return self.Models
 
     monkeypatch.setattr("openai.AsyncOpenAI", FakeClient)
 

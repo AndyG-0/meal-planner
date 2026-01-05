@@ -1,13 +1,13 @@
 """Tests for grocery list endpoints."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Calendar, CalendarMeal, Recipe, GroceryList, User
-from app.utils.auth import get_password_hash, create_access_token
+from app.models import Calendar, CalendarMeal, GroceryList, Recipe, User
+from app.utils.auth import create_access_token, get_password_hash
 
 
 @pytest.mark.asyncio

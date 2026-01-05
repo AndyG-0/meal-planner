@@ -1,5 +1,6 @@
 import pytest
-from app.models import User, OpenAISettings
+
+from app.models import OpenAISettings, User
 from app.utils.auth import create_access_token
 
 

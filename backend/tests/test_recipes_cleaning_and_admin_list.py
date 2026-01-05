@@ -1,7 +1,8 @@
+
 import pytest
-from app.models import Recipe, RecipeTag, User, UserFavorite
+
+from app.models import Recipe, RecipeTag, User
 from app.utils.auth import create_access_token
-import io
 
 
 @pytest.mark.asyncio
@@ -22,8 +23,8 @@ async def test_list_recipes_cleans_ingredients_and_includes_tags(client, db_sess
     items = resp.json()["items"]
     found = next((it for it in items if it["title"] == "CleanR"), None)
     assert found is not None
-    assert any(ing["name"] == "flour" or "flour" in ing["name"] for ing in found["ingredients"]) 
-    assert any(tg["tag_name"] == "baking" for tg in found["tags"]) 
+    assert any(ing["name"] == "flour" or "flour" in ing["name"] for ing in found["ingredients"])
+    assert any(tg["tag_name"] == "baking" for tg in found["tags"])
 
 
 @pytest.mark.asyncio

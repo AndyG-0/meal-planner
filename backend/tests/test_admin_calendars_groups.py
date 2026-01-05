@@ -1,6 +1,7 @@
 import pytest
+
+from app.models import Calendar, Group, GroupMember, User
 from app.utils.auth import create_access_token
-from app.models import User, Calendar, Group, GroupMember
 
 
 @pytest.mark.asyncio
@@ -68,7 +69,7 @@ async def test_admin_group_management_and_remove_member(client, db_session):
 
     resp2 = await client.get(f"/api/v1/admin/groups/{grp.id}", headers={"Authorization": f"Bearer {token}"})
     assert resp2.status_code == 200
-    assert any(m["username"] == "gmember" for m in resp2.json()["members"]) 
+    assert any(m["username"] == "gmember" for m in resp2.json()["members"])
 
     # remove member by id
     # find member id via response

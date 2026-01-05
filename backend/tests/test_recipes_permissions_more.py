@@ -1,7 +1,7 @@
 import pytest
-from sqlalchemy import select
+
+from app.models import Group, GroupMember, Recipe, RecipeTag, User
 from app.utils.auth import create_access_token
-from app.models import User, Recipe, Group, GroupMember, RecipeTag
 
 
 @pytest.mark.asyncio
@@ -69,15 +69,15 @@ async def test_list_recipes_category_difficulty_and_dietary_filters(client, db_s
 
     resp = await client.get("/api/v1/recipes?category=dessert", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
-    assert any(item["title"] == "CatA" for item in resp.json()["items"]) 
+    assert any(item["title"] == "CatA" for item in resp.json()["items"])
 
     resp2 = await client.get("/api/v1/recipes?difficulty=hard", headers={"Authorization": f"Bearer {token}"})
     assert resp2.status_code == 200
-    assert any(item["title"] == "CatB" for item in resp2.json()["items"]) 
+    assert any(item["title"] == "CatB" for item in resp2.json()["items"])
 
     resp3 = await client.get("/api/v1/recipes?dietary=vegan", headers={"Authorization": f"Bearer {token}"})
     assert resp3.status_code == 200
-    assert any(item["title"] == "CatB" for item in resp3.json()["items"]) 
+    assert any(item["title"] == "CatB" for item in resp3.json()["items"])
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,7 @@
-import json
 import pytest
 
-from app.services.openai_service import OpenAIService
 from app.models import Recipe, RecipeTag
+from app.services.openai_service import OpenAIService
 
 
 @pytest.mark.asyncio
@@ -119,7 +118,7 @@ async def test_search_web_and_fetch_url(monkeypatch):
 
     # Provide a minimal BeautifulSoup implementation when beautifulsoup4 is not available
     try:
-        from bs4 import BeautifulSoup as _BS  # noqa: F401
+        from bs4 import BeautifulSoup as bs  # noqa: F401, N813
     except Exception:
         import re
 
@@ -159,7 +158,6 @@ async def test_search_web_and_fetch_url(monkeypatch):
         monkeypatch.setattr("app.services.openai_service.BeautifulSoup", FakeSoup)
 
     # instantiate service and call methods
-    import asyncio
     from app.services.openai_service import OpenAIService
 
     # search_web

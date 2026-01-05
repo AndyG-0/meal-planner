@@ -1,4 +1,5 @@
 import pytest
+
 from app.utils.auth import create_access_token
 
 
@@ -44,7 +45,7 @@ async def test_feature_toggles_crud(client, db_session):
 
 @pytest.mark.asyncio
 async def test_openai_settings_and_models(client, db_session, monkeypatch):
-    from app.models import User, OpenAISettings
+    from app.models import User
 
     admin = User(username="openadmin", email="oa@example.com", password_hash="x", is_admin=True)
     db_session.add(admin)
@@ -83,7 +84,7 @@ async def test_openai_settings_and_models(client, db_session, monkeypatch):
         def __init__(self, api_key=None):
             self.api_key = api_key
 
-        class models:
+        class Models:
             @staticmethod
             async def list():
                 return FakeModelsResp(
@@ -93,6 +94,10 @@ async def test_openai_settings_and_models(client, db_session, monkeypatch):
                         FakeModel("gpt-3.5-turbo", "openai", 3),
                     ]
                 )
+
+        @property
+        def models(self):
+            return self.Models
 
     monkeypatch.setattr("openai.AsyncOpenAI", FakeAsyncOpenAI)
 

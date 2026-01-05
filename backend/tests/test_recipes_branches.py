@@ -1,7 +1,8 @@
 import io
+
 import pytest
-from datetime import datetime
-from app.models import User, Recipe, RecipeTag, Group, GroupMember, UserFavorite
+
+from app.models import Group, GroupMember, Recipe, RecipeTag, User, UserFavorite
 from app.utils.auth import create_access_token
 
 
@@ -103,14 +104,14 @@ async def test_upload_image_io_failure_returns_500(client, db_session, test_user
         content_type = "image/jpeg"
 
         async def read(self):
-            raise IOError("disk full")
+            raise OSError("disk full")
 
     # monkeypatch UploadFile read by passing BadFile via files param may not work; instead call endpoint directly via starlette TestClient simulation
     files = {"file": ("bad.jpg", io.BytesIO(b"x"), "image/jpeg")}
 
     # monkeypatch the open/write to raise
     def raise_open(*args, **kwargs):
-        raise IOError("disk full")
+        raise OSError("disk full")
 
     monkeypatch.setattr("builtins.open", raise_open)
 

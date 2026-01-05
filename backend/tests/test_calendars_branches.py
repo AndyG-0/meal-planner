@@ -1,8 +1,10 @@
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 from sqlalchemy import select
+
+from app.models import Calendar, CalendarMeal, Recipe, User
 from app.utils.auth import create_access_token
-from app.models import User, Calendar, Recipe, CalendarMeal
 
 
 def test_smoke_basic():

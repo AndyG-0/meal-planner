@@ -1,6 +1,7 @@
 import pytest
-from app.services.openai_service import OpenAIService
+
 from app.models import User
+from app.services.openai_service import OpenAIService
 
 
 @pytest.mark.asyncio

@@ -1,8 +1,6 @@
 """Tests for recipe utilities (ingredient cleaning) and tag listing."""
 
-import pytest
 from app.api.v1.endpoints.recipes import clean_ingredient_data
-from app.models import Recipe, RecipeTag
 
 
 def test_clean_ingredient_parses_fraction_and_unit():

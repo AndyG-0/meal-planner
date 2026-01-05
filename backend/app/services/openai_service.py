@@ -5,10 +5,7 @@ import logging
 from typing import Any
 
 import httpx
-try:
-    from bs4 import BeautifulSoup
-except Exception:  # pragma: no cover - optional dependency
-    BeautifulSoup = None
+
 from openai import AsyncOpenAI
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -242,7 +239,7 @@ Always include relevant tags in the 'tags' array when creating or updating recip
             String containing dietary preferences or empty string if disabled
         """
         # Check if user has enabled dietary preferences in AI and this request wants to use them
-        if use_dietary_preferences and user.dietary_preferences:
+        if use_dietary_preferences and user.dietary_preferences is not None and user.dietary_preferences:
             prefs = ", ".join(user.dietary_preferences)
             dietary_text = """
 

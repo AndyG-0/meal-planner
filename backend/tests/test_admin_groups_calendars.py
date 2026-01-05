@@ -1,6 +1,7 @@
 import pytest
+
+from app.models import Calendar, Group, GroupMember, User
 from app.utils.auth import create_access_token, get_password_hash
-from app.models import User, Group, GroupMember, Calendar
 
 
 @pytest.mark.asyncio

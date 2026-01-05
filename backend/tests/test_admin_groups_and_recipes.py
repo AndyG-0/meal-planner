@@ -1,6 +1,7 @@
 import pytest
+
+from app.models import Group, GroupMember, Recipe, User
 from app.utils.auth import create_access_token
-from app.models import User, Group, GroupMember, Recipe
 
 
 @pytest.mark.asyncio

@@ -1,6 +1,7 @@
 import pytest
+
+from app.models import Recipe, RecipeTag, User
 from app.utils.auth import create_access_token
-from app.models import User, Recipe, RecipeTag
 
 
 @pytest.mark.asyncio
@@ -26,7 +27,7 @@ async def test_list_recipes_search_and_multi_tag(client, db_session):
     # search
     resp = await client.get("/api/v1/recipes?search=SearchMe", headers={"Authorization": f"Bearer {token}"})
     assert resp.status_code == 200
-    assert any(item["title"] == "SearchMe" for item in resp.json()["items"]) 
+    assert any(item["title"] == "SearchMe" for item in resp.json()["items"])
 
     # multi-tags
     resp2 = await client.get("/api/v1/recipes?tags=a,b", headers={"Authorization": f"Bearer {token}"})

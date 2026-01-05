@@ -1,7 +1,9 @@
-import pytest
 from datetime import datetime, timedelta
-from app.utils.auth import get_password_hash, create_access_token
-from app.models import User, Calendar, Recipe, CalendarMeal
+
+import pytest
+
+from app.models import Calendar, CalendarMeal, Recipe, User
+from app.utils.auth import create_access_token, get_password_hash
 
 
 @pytest.mark.asyncio

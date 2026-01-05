@@ -1,11 +1,10 @@
 """Tests for OpenAIService create/update behavior and tag categorization."""
 
 import pytest
-
-from app.services.openai_service import OpenAIService
-from app.models import Recipe, RecipeTag, User
-from app.utils.auth import get_password_hash
 from sqlalchemy import select
+
+from app.models import Recipe, RecipeTag
+from app.services.openai_service import OpenAIService
 
 
 @pytest.mark.asyncio

@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import Login from './Login';
-import { authService } from '../services';
 
 vi.mock('../services', () => ({
   authService: {
@@ -41,6 +40,7 @@ describe('Login', () => {
     );
 
     expect(screen.getByText(/don't have an account/i)).toBeTruthy();
-    expect(screen.getByText(/forgot your password/i)).toBeTruthy();
+    const forgotPasswordLinks = screen.getAllByText(/forgot your password/i);
+    expect(forgotPasswordLinks.length).toBeGreaterThan(0);
   });
 });

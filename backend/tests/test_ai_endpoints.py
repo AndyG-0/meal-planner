@@ -1,10 +1,7 @@
-import json
 import types
 
 import pytest
 from pytest import MonkeyPatch
-
-from app.api.v1 import endpoints as endpoints_pkg
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,9 @@
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
+
+from app.models import Calendar, Recipe, RecipeTag, User
 from app.services.calendar_prepopulate import CalendarPrepopulateService
-from app.models import User, Recipe, RecipeTag, Calendar
 
 
 @pytest.mark.asyncio
@@ -47,7 +49,7 @@ async def test_prepopulate_day_and_snack_and_dessert(db_session):
 @pytest.mark.asyncio
 async def test_prepopulate_week_with_dietary_filter(db_session):
     # user with dietary preference
-    user = User(username="dietu", email="diet@example.com", password_hash="x", dietary_preferences=["vegan"]) 
+    user = User(username="dietu", email="diet@example.com", password_hash="x", dietary_preferences=["vegan"])
     db_session.add(user)
     await db_session.commit()
     await db_session.refresh(user)

@@ -1,5 +1,6 @@
 import pytest
-from app.models import User, Recipe, RecipeCollection
+
+from app.models import Recipe, RecipeCollection, User
 from app.utils.auth import get_password_hash
 
 

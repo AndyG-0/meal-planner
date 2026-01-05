@@ -1,5 +1,6 @@
 import pytest
-from app.models import User, Group, GroupMember
+
+from app.models import Group, GroupMember, User
 from app.utils.auth import create_access_token
 
 

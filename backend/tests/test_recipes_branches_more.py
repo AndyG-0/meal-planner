@@ -1,8 +1,9 @@
-import io
 import json
+
 import pytest
+
+from app.models import Recipe, User
 from app.utils.auth import create_access_token
-from app.models import User, Recipe, RecipeTag, UserFavorite, RecipeRating
 
 
 @pytest.mark.asyncio

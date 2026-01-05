@@ -1,6 +1,7 @@
 import pytest
+
+from app.models import Recipe, User
 from app.utils.auth import create_access_token
-from app.models import User, Recipe
 
 
 @pytest.mark.asyncio
@@ -24,7 +25,7 @@ async def test_clean_ingredient_parsing_in_get_and_list(client, db_session):
     data = resp.json()
     assert isinstance(data["ingredients"], list)
     # check parsed fields present
-    assert any(i.get("unit") is not None for i in data["ingredients"]) 
+    assert any(i.get("unit") is not None for i in data["ingredients"])
 
 
 @pytest.mark.asyncio

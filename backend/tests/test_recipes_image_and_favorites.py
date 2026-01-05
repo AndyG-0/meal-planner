@@ -1,9 +1,10 @@
-import io
-import json
 import builtins
+import json
+
 import pytest
+
+from app.models import Recipe, User
 from app.utils.auth import create_access_token
-from app.models import User, Recipe, UserFavorite, RecipeRating
 
 
 @pytest.mark.asyncio
@@ -43,7 +44,7 @@ async def test_upload_recipe_image_save_failure(monkeypatch, client, db_session)
 
     # Monkeypatch builtins.open to raise when trying to write file
     def fake_open(*args, **kwargs):
-        raise IOError("disk full")
+        raise OSError("disk full")
 
     monkeypatch.setattr(builtins, "open", fake_open, raising=False)
 

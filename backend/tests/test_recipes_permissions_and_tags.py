@@ -1,7 +1,8 @@
 import pytest
 from sqlalchemy import select
+
+from app.models import Group, GroupMember, Recipe, RecipeTag, User
 from app.utils.auth import create_access_token
-from app.models import User, Recipe, RecipeTag, Group, GroupMember
 
 
 @pytest.mark.asyncio
