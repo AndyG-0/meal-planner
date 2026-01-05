@@ -7,14 +7,14 @@ How it works:
 - Create a new release tag locally: `./scripts/release.sh v1.2.3` (this will create an annotated tag and push it).
 - Pushing the tag triggers `.github/workflows/release.yml`:
   - Builds backend and frontend Docker images
-  - Tags them as `ghcr.io/<OWNER>/mealplanner-backend:<TAG>` and `.../mealplanner-frontend:<TAG>` and also as `...:latest`
+  - Tags them as `ghcr.io/<owner>/mealplanner-backend:<TAG>` and `.../mealplanner-frontend:<TAG>` and also as `...:latest`
   - Pushes images to GHCR
   - Creates a GitHub Release with basic notes and recent commits
 
 Pulling the images:
 
 - Authenticate with GHCR: `echo $GITHUB_TOKEN | docker login ghcr.io -u <USERNAME> --password-stdin`
-- Pull an image: `docker pull ghcr.io/<OWNER>/mealplanner-backend:v1.2.3`
+- Pull an image: `docker pull ghcr.io/<owner>/mealplanner-backend:v1.2.3`
 
 Notes:
 
