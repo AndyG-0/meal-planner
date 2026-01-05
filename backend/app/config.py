@@ -1,6 +1,5 @@
 """Application configuration."""
 
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,7 +24,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # CORS
-    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173"]
+    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3080", "http://localhost:5173"]
+
+    # Backend URL for generating absolute URLs
+    BACKEND_URL: str = "http://localhost:8180"
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
@@ -48,6 +50,9 @@ class Settings(BaseSettings):
     # OpenAI (optional)
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-3.5-turbo"
+
+    # Recipe Images
+    DEFAULT_RECIPE_IMAGE: str = "/uploads/recipes/missing-image.jpg"
 
     model_config = SettingsConfigDict(
         env_file=".env",

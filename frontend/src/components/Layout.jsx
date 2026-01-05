@@ -19,16 +19,25 @@ import {
   CalendarMonth,
   ShoppingCart,
   Dashboard as DashboardIcon,
+  AdminPanelSettings,
+  AccountCircle,
+  Group as GroupIcon,
+  Settings as SettingsIcon,
+  Brightness4 as DarkModeIcon,
+  Brightness7 as LightModeIcon,
+  Folder as FolderIcon,
 } from '@mui/icons-material'
 import { useState } from 'react'
 import { useAuthStore } from '../store/authStore'
+import { useThemeMode } from '../contexts/ThemeContext'
 
 const drawerWidth = 240
 
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const navigate = useNavigate()
-  const logout = useAuthStore((state) => state.logout)
+  const { logout, user } = useAuthStore()
+  const { mode, toggleTheme } = useThemeMode()
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -42,9 +51,17 @@ export default function Layout() {
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
     { text: 'Recipes', icon: <Restaurant />, path: '/recipes' },
+    { text: 'Collections', icon: <FolderIcon />, path: '/collections' },
     { text: 'Calendar', icon: <CalendarMonth />, path: '/calendar' },
-    { text: 'Grocery List', icon: <ShoppingCart />, path: '/grocery-list' },
+    { text: 'Grocery List', icon: <ShoppingCart />, path: '/grocery-lists' },
+    { text: 'Groups', icon: <GroupIcon />, path: '/groups' },
+    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ]
+
+  // Add admin menu item if user is admin
+  if (user?.is_admin) {
+    menuItems.push({ text: 'Admin', icon: <AdminPanelSettings />, path: '/admin' })
+  }
 
   const drawer = (
     <div>
@@ -88,9 +105,26 @@ export default function Layout() {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Meal Planner
           </Typography>
-          <Button color="inherit" onClick={handleLogout}>
-            Logout
-          </Button>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton color="inherit" onClick={toggleTheme} title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
+              {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+            </IconButton>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AccountCircle />
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                <Typography variant="body2" sx={{ lineHeight: 1.2, fontWeight: 500 }}>
+                  {user?.username}
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', lineHeight: 1.2 }}>
+                  {user?.email}
+                  {user?.is_admin && ' • Admin'}
+                </Typography>
+              </Box>
+            </Box>
+            <Button color="inherit" onClick={handleLogout}>
+              Logout
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
       <Box

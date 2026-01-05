@@ -1,10 +1,24 @@
 """Main FastAPI application."""
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from app.api.v1.endpoints import auth, calendars, grocery_lists, recipes
+from app.api.v1.endpoints import (
+    admin,
+    ai,
+    auth,
+    calendars,
+    collections,
+    features,
+    grocery_lists,
+    groups,
+    recipes,
+)
 from app.config import settings
+from app.middleware.rate_limit import RateLimitMiddleware
 
 # Create FastAPI app
 app = FastAPI(
@@ -24,11 +38,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add rate limiting (increased for normal browsing usage)
+app.add_middleware(
+    RateLimitMiddleware,
+    requests_per_minute=300,  # Increased from 100 - allows for intensive browsing/filtering
+    requests_per_hour=10000,  # Increased from 2000 - allows for extended usage sessions
+)
+
+# Create uploads directory and mount static files
+uploads_dir = Path("uploads")
+uploads_dir.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
 # Include routers
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(recipes.router, prefix=settings.API_V1_PREFIX)
 app.include_router(calendars.router, prefix=settings.API_V1_PREFIX)
 app.include_router(grocery_lists.router, prefix=settings.API_V1_PREFIX)
+app.include_router(groups.router, prefix=settings.API_V1_PREFIX)
+app.include_router(admin.router, prefix=settings.API_V1_PREFIX)
+app.include_router(ai.router, prefix=settings.API_V1_PREFIX)
+app.include_router(features.router, prefix=settings.API_V1_PREFIX)
+app.include_router(collections.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health")

@@ -27,9 +27,10 @@ export default function Login() {
 
     try {
       const data = await authService.login(username, password)
-      // For now, set user to basic info from username
-      // In production, you'd fetch full user details
-      const user = { username }
+      // Set tokens first so the getCurrentUser call is authenticated
+      setAuth(null, data.access_token, data.refresh_token)
+      // Fetch full user details
+      const user = await authService.getCurrentUser()
       setAuth(user, data.access_token, data.refresh_token)
       navigate('/')
     } catch (err) {
@@ -92,10 +93,17 @@ export default function Login() {
             >
               {loading ? 'Signing In...' : 'Sign In'}
             </Button>
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
+                <Typography variant="body2" color="primary">
+                  Forgot your password?
+                </Typography>
+              </Link>
+            </Box>
             <Box sx={{ textAlign: 'center' }}>
               <Link to="/register" style={{ textDecoration: 'none' }}>
                 <Typography variant="body2" color="primary">
-                  Don't have an account? Sign Up
+                  Don&apos;t have an account? Sign Up
                 </Typography>
               </Link>
             </Box>

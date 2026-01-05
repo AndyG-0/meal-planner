@@ -1,0 +1,26 @@
+name-template: 'v$NEXT_PATCH_VERSION'
+tag-template: 'v$NEXT_PATCH_VERSION'
+categories:
+  - title: '🚀 Added'
+    label: 'added'
+  - title: '🛠 Changed'
+    label: 'changed'
+  - title: '🐛 Fixed'
+    label: 'fixed'
+  - title: '⚠️ Deprecated'
+    label: 'deprecated'
+  - title: '❌ Removed'
+    label: 'removed'
+  - title: '🔒 Security'
+    label: 'security'
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+template: |
+  ## What's Changed
+  $CHANGES
+
+  ---
+  $COMPARISON
+
+update-template: |
+  This release is based on the following merged PRs and commits:
+  $CHANGES

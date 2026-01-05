@@ -34,7 +34,7 @@ async def test_register_duplicate_username(client: AsyncClient):
             "password": "testpassword123",
         },
     )
-    
+
     # Try to create user with same username
     response = await client.post(
         "/api/v1/auth/register",
@@ -59,7 +59,7 @@ async def test_login(client: AsyncClient):
             "password": "testpassword123",
         },
     )
-    
+
     # Login
     response = await client.post(
         "/api/v1/auth/login",

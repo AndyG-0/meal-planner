@@ -1,0 +1,18 @@
+<svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" fill="#1976d2"/>
+  <g transform="translate(256, 256)">
+    <!-- Fork -->
+    <path d="M -80,-120 L -80,-60 M -80,-120 L -90,-100 M -80,-120 L -70,-100 M -60,-120 L -60,-60 M -40,-120 L -40,-60" 
+          stroke="white" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <!-- Knife -->
+    <path d="M 40,-120 L 40,-60 M 40,-120 L 20,-100" 
+          stroke="white" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <rect x="30" y="-60" width="20" height="80" fill="white" rx="4"/>
+    <!-- Spoon -->
+    <ellipse cx="0" cy="-90" rx="15" ry="25" fill="white"/>
+    <rect x="-5" y="-65" width="10" height="85" fill="white" rx="4"/>
+    <!-- Plate -->
+    <circle cx="0" cy="60" r="120" fill="none" stroke="white" stroke-width="12"/>
+    <circle cx="0" cy="60" r="90" fill="none" stroke="white" stroke-width="8"/>
+  </g>
+</svg>
