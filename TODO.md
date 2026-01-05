@@ -61,4 +61,3 @@
 * ~~Enable staple recipes (like dough, sauce) to be used as ingredients in other recipes~~ (Frontend UI completed - RecipeForm supports staple ingredient selection. Backend integration needs migration from JSON ingredients column to RecipeIngredient table)
 * ~~Copy a day, month or a week in the meal planner to another day/week/month~~
 * ~~Add the ability for the grocery list to be printed or exported to a txt file or csv.~~
-* Add the ability to keep screen alive on mobile when looking at a recipe.

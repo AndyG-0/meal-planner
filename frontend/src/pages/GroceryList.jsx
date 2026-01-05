@@ -288,15 +288,34 @@ export default function GroceryList() {
     
     try {
       const htmlContent = await groceryListService.getPrintHTML(selectedList.id)
-      const printWindow = window.open('', '_blank')
-      if (printWindow) {
-        printWindow.document.write(htmlContent)
-        printWindow.document.close()
-        // Give the content a moment to load, then trigger print
-        setTimeout(() => {
-          printWindow.print()
-        }, 250)
+      const blob = new Blob([htmlContent], { type: 'text/html' })
+      const url = window.URL.createObjectURL(blob)
+
+      const iframe = document.createElement('iframe')
+      iframe.style.position = 'fixed'
+      iframe.style.right = '0'
+      iframe.style.bottom = '0'
+      iframe.style.width = '0'
+      iframe.style.height = '0'
+      iframe.style.border = '0'
+      iframe.src = url
+
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow?.focus()
+          iframe.contentWindow?.print()
+        } finally {
+          window.URL.revokeObjectURL(url)
+          // Remove the iframe after print is triggered
+          setTimeout(() => {
+            if (iframe.parentNode) {
+              iframe.parentNode.removeChild(iframe)
+            }
+          }, 0)
+        }
       }
+
+      document.body.appendChild(iframe)
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to open print view')
     }

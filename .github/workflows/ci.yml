@@ -35,6 +35,7 @@ jobs:
       - name: Run linting (ruff)
         working-directory: ./backend
         run: ruff check .
+        run: ruff check .
       
       - name: Run type checking (mypy)
         working-directory: ./backend

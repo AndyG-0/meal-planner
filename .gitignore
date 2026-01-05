@@ -39,6 +39,7 @@ venv/
 ENV/
 env/
 .venv
+.env
 
 # IDE
 .vscode/
@@ -59,7 +60,7 @@ build/
 Thumbs.db
 
 # User uploads (generated files, not part of repo)
-uploads/
+uploads/**/*
 
 # Local development files
 .env.local
@@ -68,10 +69,14 @@ local_settings.py
 # Test coverage
 .coverage
 htmlcov/
+frontend/.converage
+coverage.xml
 
 # Log files
-*.log
-*.logs
+**/*/*.log
+**/*.logs
+log
+logs
 
 # IDE specific
 .vscode/settings.json

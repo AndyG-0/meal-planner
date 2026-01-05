@@ -100,9 +100,17 @@ export default function Login() {
                 </Typography>
               </Link>
             </Box>
+            <Box sx={{ textAlign: 'center', mb: 2 }}>
+              <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
+                <Typography variant="body2" color="primary">
+                  Forgot your password?
+                </Typography>
+              </Link>
+            </Box>
             <Box sx={{ textAlign: 'center' }}>
               <Link to="/register" style={{ textDecoration: 'none' }}>
                 <Typography variant="body2" color="primary">
+                  Don&apos;t have an account? Sign Up
                   Don&apos;t have an account? Sign Up
                 </Typography>
               </Link>
