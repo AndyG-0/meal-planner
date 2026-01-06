@@ -1,5 +1,4 @@
-"""Main FastAPI application."""
-
+import json
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -30,9 +29,14 @@ app = FastAPI(
 )
 
 # Configure CORS
+try:
+    allow_origins = json.loads(settings.BACKEND_CORS_ORIGINS)
+except (json.JSONDecodeError, TypeError):
+    allow_origins = [origin.strip() for origin in settings.BACKEND_CORS_ORIGINS.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -51,6 +51,8 @@ env/
 
 # Build and distribution
 node_modules/
+.vite/
+dev-dist/
 dist/
 build/
 *.tsbuildinfo

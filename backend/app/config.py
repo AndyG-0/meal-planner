@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # CORS
-    BACKEND_CORS_ORIGINS: list[str] = ["http://localhost:3080", "http://localhost:5173"]
+    BACKEND_CORS_ORIGINS: str = "http://localhost:3080,http://localhost:5173"
 
     # Backend URL for generating absolute URLs
     BACKEND_URL: str = "http://localhost:8180"

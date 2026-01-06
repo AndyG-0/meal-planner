@@ -45,6 +45,7 @@ services:
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY:-change-this-secret-key-in-production}
+      BACKEND_CORS_ORIGINS: "http://localhost:3080,http://localhost:5173"
       DEBUG: ${DEBUG:-True}
       BACKEND_URL: http://localhost:8180
     depends_on:
