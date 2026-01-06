@@ -36,8 +36,8 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ toLower(github.repository_owner) }}/mealplanner-backend:${{ github.ref_name }}
-            ghcr.io/${{ toLower(github.repository_owner) }}/mealplanner-backend:latest
+            ghcr.io/andyg-0/mealplanner-backend:${{ github.ref_name }}
+            ghcr.io/andyg-0/mealplanner-backend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -49,8 +49,8 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ toLower(github.repository_owner) }}/mealplanner-frontend:${{ github.ref_name }}
-            ghcr.io/${{ toLower(github.repository_owner) }}/mealplanner-frontend:latest
+            ghcr.io/andyg-0/mealplanner-frontend:${{ github.ref_name }}
+            ghcr.io/andyg-0/mealplanner-frontend:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -68,8 +68,8 @@ jobs:
             })
             const short = commits.data.slice(0, 10).map(c => `- ${c.commit.message.split('\n')[0]} (${c.sha.substring(0,7)})`).join('\n')
             return `Images published:\n` +
-                   `- ghcr.io/${context.repo.owner.toLowerCase()}/mealplanner-backend:${process.env.GITHUB_REF_NAME} (digest: ${{ steps.backend.outputs.digest }})\n` +
-                   `- ghcr.io/${context.repo.owner.toLowerCase()}/mealplanner-frontend:${process.env.GITHUB_REF_NAME} (digest: ${{ steps.frontend.outputs.digest }})\n\n` +
+                   `- ghcr.io/andyg-0/mealplanner-backend:${process.env.GITHUB_REF_NAME} (digest: ${{ steps.backend.outputs.digest }})\n` +
+                   `- ghcr.io/andyg-0/mealplanner-frontend:${process.env.GITHUB_REF_NAME} (digest: ${{ steps.frontend.outputs.digest }})\n\n` +
                    `Recent commits:\n` + short
 
       - name: Create GitHub Release
