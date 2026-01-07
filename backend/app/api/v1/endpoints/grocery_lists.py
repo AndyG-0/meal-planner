@@ -66,17 +66,20 @@ async def create_grocery_list(
     db: AsyncSession = Depends(get_db),
 ) -> GroceryList:
     """Create a grocery list from calendar meals."""
+    logger.info("Creating grocery list from calendar: calendar_id=%s, user_id=%s", calendar_id, current_user.id)
     # Check if calendar exists and user has permission
     result = await db.execute(select(Calendar).where(Calendar.id == calendar_id))
     calendar = result.scalar_one_or_none()
 
     if not calendar:
+        logger.warning("Calendar not found for grocery list creation: calendar_id=%s", calendar_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Calendar not found",
         )
 
     if calendar.owner_id != current_user.id:
+        logger.warning("Unauthorized grocery list creation attempt: calendar_id=%s, user_id=%s", calendar_id, current_user.id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this calendar",
@@ -104,6 +107,7 @@ async def create_grocery_list(
 
     result = await db.execute(query)
     meals = result.scalars().all()
+    logger.debug("Found %d meals for grocery list", len(meals))
 
     # Get recipes
     recipe_ids = [meal.recipe_id for meal in meals]
@@ -114,6 +118,7 @@ async def create_grocery_list(
         )
     )
     recipes = result.scalars().all()
+    logger.debug("Processing %d recipes for grocery list consolidation", len(recipes))
 
     # Consolidate ingredients
     items = consolidate_ingredients(list(recipes))

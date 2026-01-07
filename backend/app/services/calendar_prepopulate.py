@@ -48,6 +48,10 @@ class CalendarPrepopulateService:
         Returns:
             Tuple of (number of meals created, end date)
         """
+        logger.info(
+            "Prepopulating calendar: calendar_id=%s, period=%s, meal_types=%s, use_dietary=%s",
+            calendar_id, period, meal_types, use_dietary_preferences
+        )
         # Calculate end date based on period
         if period == "day":
             end_date = start_date
@@ -57,6 +61,7 @@ class CalendarPrepopulateService:
             # Approximate month as 30 days
             end_date = start_date + timedelta(days=29)
         else:
+            logger.error("Invalid period specified: %s", period)
             raise ValueError(f"Invalid period: {period}")
 
         # Get available recipes for each category
@@ -66,6 +71,7 @@ class CalendarPrepopulateService:
         for meal_type in meal_types:
             recipes = await self._get_recipes_for_category(user, meal_type, use_dietary_preferences)
             recipes_by_category[meal_type] = recipes
+            logger.debug("Found %d recipes for meal_type=%s", len(recipes), meal_type)
 
         # Get snack recipes if needed
         if snacks_per_day > 0:
