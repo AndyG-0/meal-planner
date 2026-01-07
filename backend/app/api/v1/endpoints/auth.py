@@ -43,7 +43,7 @@ async def check_setup_required(db: AsyncSession = Depends(get_db)) -> dict[str, 
 @router.post("/setup-admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def setup_initial_admin(user_data: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
     """Create the first admin user. Only works when no users exist."""
-    logger.info("Initial admin setup attempt for username: %s", sanitize_for_log(user_data.username))
+    logger.info("Initial admin setup attempt")
     # Check if any users exist
     result = await db.execute(select(func.count(User.id)))
     user_count = result.scalar() or 0
