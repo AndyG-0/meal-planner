@@ -1,5 +1,6 @@
 """Groups API endpoints."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -16,6 +17,7 @@ from app.schemas import (
     GroupUpdate,
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/groups", tags=["Groups"])
 
 

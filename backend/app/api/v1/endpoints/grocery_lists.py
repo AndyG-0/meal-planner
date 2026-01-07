@@ -1,6 +1,7 @@
 """Grocery list endpoints."""
 
 import csv
+import logging
 from io import StringIO
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -13,6 +14,7 @@ from app.database import get_db
 from app.models import Calendar, CalendarMeal, GroceryList, Recipe, User
 from app.schemas import GroceryListCreate, GroceryListResponse
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/grocery-lists", tags=["Grocery Lists"])
 
 

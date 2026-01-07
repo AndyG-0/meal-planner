@@ -1,5 +1,7 @@
 """Recipe collections API endpoints."""
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +19,7 @@ from app.schemas import (
     RecipeTagResponse,
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/collections", tags=["Recipe Collections"])
 
 

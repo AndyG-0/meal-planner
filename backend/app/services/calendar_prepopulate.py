@@ -1,5 +1,6 @@
 """Calendar prepopulation service."""
 
+import logging
 import random
 from datetime import datetime, timedelta
 
@@ -7,6 +8,8 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import CalendarMeal, GroupMember, Recipe, RecipeTag, User
+
+logger = logging.getLogger(__name__)
 
 
 class CalendarPrepopulateService:

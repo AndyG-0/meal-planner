@@ -1,11 +1,14 @@
 """Permissions service for handling access control."""
 
+import logging
 from typing import TYPE_CHECKING
 
 from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
     from app.models import Calendar, GroceryList, Recipe, User
+
+logger = logging.getLogger(__name__)
 
 
 class PermissionService:
