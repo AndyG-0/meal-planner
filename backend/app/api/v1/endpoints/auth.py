@@ -84,7 +84,7 @@ async def setup_initial_admin(user_data: UserCreate, db: AsyncSession = Depends(
     await db.commit()
     await db.refresh(user)
 
-    logger.info("Initial admin user created successfully: user_id=%s, username=%s", user.id, user.username)
+    logger.info("Initial admin user created successfully: user_id=%s", user.id)
     return user
 
 
