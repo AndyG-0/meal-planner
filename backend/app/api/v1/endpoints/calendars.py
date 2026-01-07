@@ -34,7 +34,7 @@ async def create_calendar(
     db: AsyncSession = Depends(get_db),
 ) -> Calendar:
     """Create a new calendar."""
-    logger.info("Creating calendar: name='%s', user_id=%s", calendar_data.name, current_user.id)
+    logger.info("Creating calendar: user_id=%s", current_user.id)
     calendar = Calendar(
         **calendar_data.model_dump(),
         owner_id=current_user.id,

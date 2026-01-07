@@ -33,6 +33,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
 
 
+def sanitize_for_log(value: str) -> str:
+    """Sanitize user input for logging to prevent log injection."""
+    if not value:
+        return value
+    # Replace newlines, carriage returns, and other control characters
+    return value.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')[:100]
+
+
 def clean_ingredient_data(ingredients: list) -> list:
     """Clean malformed ingredient data from database.
 
@@ -117,7 +125,7 @@ async def create_recipe(
     db: AsyncSession = Depends(get_db),
 ) -> RecipeResponse:
     """Create a new recipe."""
-    logger.info("Creating recipe: title='%s', user_id=%s", recipe_data.title, current_user.id)
+    logger.info("Creating recipe: user_id=%s", current_user.id)
     recipe = Recipe(
         **recipe_data.model_dump(),
         owner_id=current_user.id,
@@ -126,7 +134,7 @@ async def create_recipe(
     await db.commit()
     await db.refresh(recipe)
 
-    logger.info("Recipe created successfully: recipe_id=%s, title='%s'", recipe.id, recipe.title)
+    logger.info("Recipe created successfully: recipe_id=%s", recipe.id)
     # Create RecipeResponse with all fields including is_favorite=False
     recipe_response = RecipeResponse(
         id=recipe.id,
@@ -173,8 +181,8 @@ async def list_recipes(
 ) -> PaginatedRecipeResponse:
     """List recipes accessible to the user with optional filters and pagination."""
     logger.debug(
-        "Listing recipes: user_id=%s, page=%d, page_size=%d, search='%s', tags='%s', category='%s'",
-        current_user.id, page, page_size, search, tags, category
+        "Listing recipes: user_id=%s, page=%d, page_size=%d, category='%s'",
+        current_user.id, page, page_size, category
     )
     # Get user's group IDs
     group_result = await db.execute(

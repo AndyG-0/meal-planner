@@ -31,6 +31,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+def sanitize_for_log(value: str) -> str:
+    """Sanitize user input for logging to prevent log injection."""
+    if not value:
+        return value
+    # Replace newlines, carriage returns, and other control characters
+    return value.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')[:100]
+
+
 @router.get("/setup-required")
 async def check_setup_required(db: AsyncSession = Depends(get_db)) -> dict[str, bool]:
     """Check if initial setup is required (no users exist)."""
@@ -42,7 +50,7 @@ async def check_setup_required(db: AsyncSession = Depends(get_db)) -> dict[str, 
 @router.post("/setup-admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def setup_initial_admin(user_data: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
     """Create the first admin user. Only works when no users exist."""
-    logger.info("Initial admin setup attempt for username: %s", user_data.username)
+    logger.info("Initial admin setup attempt for username: %s", sanitize_for_log(user_data.username))
     # Check if any users exist
     result = await db.execute(select(func.count(User.id)))
     user_count = result.scalar() or 0
@@ -57,7 +65,7 @@ async def setup_initial_admin(user_data: UserCreate, db: AsyncSession = Depends(
     # Check if username would conflict (extra safety)
     result = await db.execute(select(User).where(User.username == user_data.username))
     if result.scalar_one_or_none():
-        logger.warning("Setup-admin failed: Username already exists: %s", user_data.username)
+        logger.warning("Setup-admin failed: Username already exists")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered",
@@ -66,7 +74,7 @@ async def setup_initial_admin(user_data: UserCreate, db: AsyncSession = Depends(
     # Check if email would conflict (extra safety)
     result = await db.execute(select(User).where(User.email == user_data.email))
     if result.scalar_one_or_none():
-        logger.warning("Setup-admin failed: Email already exists: %s", user_data.email)
+        logger.warning("Setup-admin failed: Email already exists")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -90,11 +98,11 @@ async def setup_initial_admin(user_data: UserCreate, db: AsyncSession = Depends(
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) -> User:
     """Register a new user."""
-    logger.info("User registration attempt for username: %s", user_data.username)
+    logger.info("User registration attempt")
     # Check if username exists
     result = await db.execute(select(User).where(User.username == user_data.username))
     if result.scalar_one_or_none():
-        logger.warning("Registration failed: Username already exists: %s", user_data.username)
+        logger.warning("Registration failed: Username already exists")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Username already registered",
@@ -103,7 +111,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) ->
     # Check if email exists
     result = await db.execute(select(User).where(User.email == user_data.email))
     if result.scalar_one_or_none():
-        logger.warning("Registration failed: Email already exists: %s", user_data.email)
+        logger.warning("Registration failed: Email already exists")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered",
@@ -119,7 +127,7 @@ async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)) ->
     await db.commit()
     await db.refresh(user)
 
-    logger.info("User registered successfully: user_id=%s, username=%s", user.id, user.username)
+    logger.info("User registered successfully: user_id=%s", user.id)
     return user
 
 
@@ -129,7 +137,7 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
     """Login user and return access token."""
-    logger.info("Login attempt for username: %s", form_data.username)
+    logger.info("Login attempt")
     # Find user by username
     result = await db.execute(
         select(User).where(User.username == form_data.username, User.deleted_at.is_(None))
@@ -137,7 +145,7 @@ async def login(
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(form_data.password, user.password_hash):
-        logger.warning("Failed login attempt for username: %s", form_data.username)
+        logger.warning("Failed login attempt")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
@@ -148,7 +156,7 @@ async def login(
     access_token = await create_access_token_async(data={"sub": str(user.id)}, db=db)
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
-    logger.info("Successful login for user: user_id=%s, username=%s", user.id, user.username)
+    logger.info("Successful login for user_id=%s", user.id)
     return {
         "access_token": access_token,
         "refresh_token": refresh_token,
@@ -218,7 +226,7 @@ async def search_users(
     if not q or len(q) < 2:
         return []
 
-    logger.debug("User search: query='%s', requested_by=%s", q, current_user.id)
+    logger.debug("User search: requested_by=%s", current_user.id)
     search_pattern = f"%{q}%"
     result = await db.execute(
         select(User)
@@ -239,7 +247,7 @@ async def request_password_reset(
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, str]:
     """Request a password reset token."""
-    logger.info("Password reset requested for email: %s", reset_request.email)
+    logger.info("Password reset requested")
     # Find user by email
     result = await db.execute(
         select(User).where(User.email == reset_request.email, User.deleted_at.is_(None))
@@ -248,7 +256,7 @@ async def request_password_reset(
 
     # Always return success even if user not found (security best practice)
     if not user:
-        logger.debug("Password reset requested for non-existent email: %s", reset_request.email)
+        logger.debug("Password reset requested for non-existent email")
         return {"message": "If the email exists in our system, a password reset link will be sent."}
 
     # Invalidate any existing tokens for this user

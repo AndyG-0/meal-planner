@@ -58,7 +58,7 @@ async def create_group(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> Group:
     """Create a new group."""
-    logger.info("Creating group: name='%s', user_id=%s", group_data.name, current_user.id)
+    logger.info("Creating group: user_id=%s", current_user.id)
     group = Group(
         name=group_data.name,
         owner_id=current_user.id,
