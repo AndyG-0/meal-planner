@@ -26,17 +26,10 @@ from app.utils.auth import (
     get_password_hash,
     verify_password,
 )
+from app.utils.logging import sanitize_for_log
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
-
-
-def sanitize_for_log(value: str) -> str:
-    """Sanitize user input for logging to prevent log injection."""
-    if not value:
-        return value
-    # Replace newlines, carriage returns, and other control characters
-    return value.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')[:100]
 
 
 @router.get("/setup-required")
@@ -189,7 +182,7 @@ async def update_me(
 
     # Check if email is being changed and if it's already taken
     if "email" in update_data:
-        logger.debug("Email change requested for user_id=%s, new_email=%s", current_user.id, update_data["email"])
+        logger.debug("Email change requested for user_id=%s", current_user.id)
         result = await db.execute(
             select(User).where(
                 User.email == update_data["email"],
