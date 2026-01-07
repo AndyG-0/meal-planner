@@ -17,7 +17,12 @@ from app.api.v1.endpoints import (
     recipes,
 )
 from app.config import settings
+from app.logging_config import setup_logging
 from app.middleware.rate_limit import RateLimitMiddleware
+
+# Set up logging
+logger = setup_logging(debug=settings.DEBUG)
+logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
 
 # Create FastAPI app
 app = FastAPI(
@@ -33,6 +38,9 @@ try:
     allow_origins = json.loads(settings.BACKEND_CORS_ORIGINS)
 except (json.JSONDecodeError, TypeError):
     allow_origins = [origin.strip() for origin in settings.BACKEND_CORS_ORIGINS.split(",")]
+
+logger.debug(f"BACKEND_CORS_ORIGINS raw value: {repr(settings.BACKEND_CORS_ORIGINS)}")
+logger.info(f"Parsed CORS allow_origins: {allow_origins}")
 
 app.add_middleware(
     CORSMiddleware,
