@@ -1,10 +1,21 @@
-"""Logging utilities for the application."""
+"""Logging utilities for the application.
+
+NOTE: The sanitize_for_log function has been deprecated.
+Sanitization is now handled automatically by the SanitizingFilter
+in app.logging_config, which is applied to all log messages.
+
+You do not need to manually sanitize log arguments anymore.
+"""
 
 import re
 
 
 def sanitize_for_log(value: str | None) -> str:
     """Sanitize user input for logging to prevent log injection.
+    
+    DEPRECATED: This function is deprecated. Sanitization is now handled
+    automatically by the logging framework's SanitizingFilter.
+    You do not need to call this function manually.
     
     Removes all control characters including ANSI escape sequences
     to prevent log injection and terminal manipulation attacks.

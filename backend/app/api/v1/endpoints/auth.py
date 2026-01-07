@@ -26,7 +26,6 @@ from app.utils.auth import (
     get_password_hash,
     verify_password,
 )
-from app.utils.logging import sanitize_for_log
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])

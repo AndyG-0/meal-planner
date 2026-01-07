@@ -28,7 +28,6 @@ from app.schemas import (
     RecipeUpdate,
 )
 from app.services.nutrition import calculate_recipe_nutrition
-from app.utils.logging import sanitize_for_log
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
@@ -175,7 +174,7 @@ async def list_recipes(
     """List recipes accessible to the user with optional filters and pagination."""
     logger.debug(
         "Listing recipes: user_id=%s, page=%d, page_size=%d, category=%s",
-        current_user.id, page, page_size, sanitize_for_log(category) if category else None
+        current_user.id, page, page_size, category
     )
     # Get user's group IDs
     group_result = await db.execute(
