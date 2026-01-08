@@ -12,17 +12,17 @@ import re
 
 def sanitize_for_log(value: str | None) -> str:
     """Sanitize user input for logging to prevent log injection.
-    
+
     DEPRECATED: This function is deprecated. Sanitization is now handled
     automatically by the logging framework's SanitizingFilter.
     You do not need to call this function manually.
-    
+
     Removes all control characters including ANSI escape sequences
     to prevent log injection and terminal manipulation attacks.
-    
+
     Args:
         value: The string to sanitize
-        
+
     Returns:
         Sanitized string safe for logging
     """

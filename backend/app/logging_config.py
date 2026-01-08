@@ -9,41 +9,41 @@ from pathlib import Path
 
 class SanitizingFilter(logging.Filter):
     """Filter that sanitizes log record arguments to prevent log injection attacks."""
-    
+
     def filter(self, record: logging.LogRecord) -> bool:
         """Sanitize all arguments in the log record.
-        
+
         Args:
             record: The log record to filter
-            
+
         Returns:
             True to allow the record to be logged
         """
         # Sanitize the message if it's a string
         if isinstance(record.msg, str):
             record.msg = self._sanitize(record.msg)
-        
+
         # Sanitize all arguments
         if record.args:
             if isinstance(record.args, dict):
-                record.args = {k: self._sanitize(v) if isinstance(v, str) else v 
+                record.args = {k: self._sanitize(v) if isinstance(v, str) else v
                              for k, v in record.args.items()}
             elif isinstance(record.args, tuple):
-                record.args = tuple(self._sanitize(arg) if isinstance(arg, str) else arg 
+                record.args = tuple(self._sanitize(arg) if isinstance(arg, str) else arg
                                   for arg in record.args)
-        
+
         return True
-    
+
     @staticmethod
     def _sanitize(value: str) -> str:
         """Sanitize a string value for logging.
-        
+
         Removes all control characters including ANSI escape sequences
         to prevent log injection and terminal manipulation attacks.
-        
+
         Args:
             value: The string to sanitize
-            
+
         Returns:
             Sanitized string safe for logging
         """
@@ -82,7 +82,7 @@ def setup_logging(debug: bool = False) -> logging.Logger:
 
     # Create sanitizing filter
     sanitizing_filter = SanitizingFilter()
-    
+
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(logging.DEBUG if debug else logging.INFO)

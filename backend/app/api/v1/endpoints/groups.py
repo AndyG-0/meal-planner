@@ -202,7 +202,7 @@ async def add_group_member(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> GroupMember:
     """Add a member to a group (owner or admin only)."""
-    logger.info("Adding member to group: group_id=%s, new_user_id=%s, by_user_id=%s", 
+    logger.info("Adding member to group: group_id=%s, new_user_id=%s, by_user_id=%s",
                 group_id, member_data.user_id, current_user.id)
     # Check if group exists
     group_result = await db.execute(select(Group).where(Group.id == group_id))
@@ -222,7 +222,7 @@ async def add_group_member(
             )
         )
         if not member_result.scalar_one_or_none():
-            logger.warning("Unauthorized group member addition attempt: group_id=%s, user_id=%s", 
+            logger.warning("Unauthorized group member addition attempt: group_id=%s, user_id=%s",
                           group_id, current_user.id)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
