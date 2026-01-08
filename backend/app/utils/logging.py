@@ -31,5 +31,5 @@ def sanitize_for_log(value: str | None) -> str:
     # Remove all control characters (0x00-0x1F and 0x7F-0x9F)
     # This includes newlines, carriage returns, tabs, ANSI escape sequences, etc.
     sanitized = re.sub(r'[\x00-\x1F\x7F-\x9F]', '', value)
-    # Truncate to 100 characters to prevent log flooding
-    return sanitized[:100]
+    # Truncate to 1000 characters to match the new SanitizingFilter behavior
+    return sanitized[:1000]

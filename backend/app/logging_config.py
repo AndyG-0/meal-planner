@@ -35,23 +35,32 @@ class SanitizingFilter(logging.Filter):
         return True
 
     @staticmethod
-    def _sanitize(value: str) -> str:
+    def _sanitize(value) -> str:
         """Sanitize a string value for logging.
 
         Removes all control characters including ANSI escape sequences
         to prevent log injection and terminal manipulation attacks.
 
         Args:
-            value: The string to sanitize
+            value: The value to sanitize (can be any type)
 
         Returns:
             Sanitized string safe for logging
         """
-        if not value:
+        # Preserve None explicitly so it is not masked as an empty string in logs
+        if value is None:
+            return "None"
+
+        # Convert to string if not already
+        str_value = str(value)
+
+        # Preserve empty strings as empty strings without further processing
+        if str_value == "":
             return ""
+
         # Remove all control characters (0x00-0x1F and 0x7F-0x9F)
         # This includes newlines, carriage returns, tabs, ANSI escape sequences, etc.
-        sanitized = re.sub(r'[\x00-\x1F\x7F-\x9F]', '', str(value))
+        sanitized = re.sub(r'[\x00-\x1F\x7F-\x9F]', '', str_value)
         # Truncate to 1000 characters to prevent log flooding
         # (increased from 100 to allow for longer messages)
         return sanitized[:1000]

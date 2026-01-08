@@ -87,7 +87,6 @@ Only start services if you verify they're not already running.
 
 See related instruction files:
 - **Memory/Guidelines**: `.github/instructions/memory.instructions.md` - Development guidelines and pre-commit checklist
-- **Workflows**: `.github/workflows/copilot-instructions.md` - Workflow-specific instructions
 
 ## Quality Gates
 
