@@ -42,20 +42,23 @@ export default function SetupAdmin() {
 
     try {
       // Create the initial admin user
-      const user = await authService.setupAdmin(username, email, password)
+      await authService.setupAdmin(username, email, password)
       
-      // Mark setup as complete
+      // Mark setup as complete immediately
       markSetupComplete()
       
       // Log the user in automatically
       const loginData = await authService.login(username, password)
+      
+      // Fetch user details with admin flag
+      const user = await authService.getCurrentUser()
       setAuth(user, loginData.access_token, loginData.refresh_token)
       
       // Navigate to dashboard
       navigate('/')
     } catch (err) {
       setError(err.response?.data?.detail || 'Setup failed')
-    } finally {
+      // If setup failed, don't mark as complete
       setLoading(false)
     }
   }

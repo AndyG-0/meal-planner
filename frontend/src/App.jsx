@@ -19,6 +19,11 @@ import { useSetupStore } from './store/setupStore'
 import { authService } from './services'
 import { CircularProgress, Box } from '@mui/material'
 
+function SetupRoute() {
+  const setupComplete = useSetupStore((state) => state.setupComplete)
+  return setupComplete ? <Navigate to="/login" replace /> : <SetupAdmin />
+}
+
 function ProtectedRoute({ children }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   return isAuthenticated ? children : <Navigate to="/login" />
@@ -45,7 +50,7 @@ function App() {
         if (setup_required) {
           // Redirect to setup page if not already there
           if (location.pathname !== '/setup') {
-            navigate('/setup')
+            navigate('/setup', { replace: true })
           }
         } else {
           // If there are users but setupComplete isn't set, mark it as complete
@@ -59,7 +64,9 @@ function App() {
     }
 
     checkSetup()
-  }, [setupComplete, markSetupComplete, navigate, location.pathname])
+  // location.pathname intentionally excluded to prevent re-checking on navigation
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setupComplete, markSetupComplete, navigate])
 
   if (checkingSetup) {
     return (
@@ -78,7 +85,7 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/setup" element={<SetupAdmin />} />
+      <Route path="/setup" element={<SetupRoute />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
