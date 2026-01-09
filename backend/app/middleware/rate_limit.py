@@ -1,11 +1,14 @@
 """Rate limiting middleware."""
 
+import logging
 import time
 from collections import defaultdict
 from collections.abc import Callable
 
 from fastapi import HTTPException, Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
+
+logger = logging.getLogger(__name__)
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -51,6 +54,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         # Check requests per hour
         if len(recent_requests) >= self.requests_per_hour:
+            logger.warning("Rate limit exceeded (hourly) for IP: %s", client_ip)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Too many requests. Please try again later.",
@@ -61,6 +65,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         one_minute_ago = current_time - 60
         recent_minute = [t for t in recent_requests if t > one_minute_ago]
         if len(recent_minute) >= self.requests_per_minute:
+            logger.warning("Rate limit exceeded (per minute) for IP: %s", client_ip)
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Rate limit exceeded. Please slow down.",

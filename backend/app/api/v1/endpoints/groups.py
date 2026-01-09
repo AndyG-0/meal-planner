@@ -1,5 +1,6 @@
 """Groups API endpoints."""
 
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -16,6 +17,7 @@ from app.schemas import (
     GroupUpdate,
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/groups", tags=["Groups"])
 
 
@@ -56,7 +58,7 @@ async def create_group(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> Group:
     """Create a new group."""
-
+    logger.info("Creating group: user_id=%s", current_user.id)
     group = Group(
         name=group_data.name,
         owner_id=current_user.id,
@@ -66,6 +68,7 @@ async def create_group(
     await db.commit()
     await db.refresh(group)
 
+    logger.info("Group created successfully: group_id=%s", group.id)
     return group
 
 
@@ -199,12 +202,14 @@ async def add_group_member(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> GroupMember:
     """Add a member to a group (owner or admin only)."""
-
+    logger.info("Adding member to group: group_id=%s, new_user_id=%s, by_user_id=%s",
+                group_id, member_data.user_id, current_user.id)
     # Check if group exists
     group_result = await db.execute(select(Group).where(Group.id == group_id))
     group = group_result.scalar_one_or_none()
 
     if not group:
+        logger.warning("Group not found for member addition: group_id=%s", group_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Group not found")
 
     # Check permissions (must be owner or admin member)
@@ -217,6 +222,8 @@ async def add_group_member(
             )
         )
         if not member_result.scalar_one_or_none():
+            logger.warning("Unauthorized group member addition attempt: group_id=%s, user_id=%s",
+                          group_id, current_user.id)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only group owner or admin can add members",
@@ -225,6 +232,7 @@ async def add_group_member(
     # Check if user exists
     user_result = await db.execute(select(User).where(User.id == member_data.user_id))
     if not user_result.scalar_one_or_none():
+        logger.warning("User not found for group member addition: user_id=%s", member_data.user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     # Check if already a member
@@ -234,6 +242,7 @@ async def add_group_member(
         )
     )
     if existing_result.scalar_one_or_none():
+        logger.debug("User already a member of group: group_id=%s, user_id=%s", group_id, member_data.user_id)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="User is already a member of this group"
         )

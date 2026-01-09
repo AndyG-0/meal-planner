@@ -1,6 +1,7 @@
 """Recipe endpoints."""
 
 import json
+import logging
 import re
 import uuid
 from datetime import datetime
@@ -28,6 +29,7 @@ from app.schemas import (
 )
 from app.services.nutrition import calculate_recipe_nutrition
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/recipes", tags=["Recipes"])
 
 
@@ -115,6 +117,7 @@ async def create_recipe(
     db: AsyncSession = Depends(get_db),
 ) -> RecipeResponse:
     """Create a new recipe."""
+    logger.info("Creating recipe: user_id=%s", current_user.id)
     recipe = Recipe(
         **recipe_data.model_dump(),
         owner_id=current_user.id,
@@ -123,6 +126,7 @@ async def create_recipe(
     await db.commit()
     await db.refresh(recipe)
 
+    logger.info("Recipe created successfully: recipe_id=%s", recipe.id)
     # Create RecipeResponse with all fields including is_favorite=False
     recipe_response = RecipeResponse(
         id=recipe.id,
@@ -168,6 +172,10 @@ async def list_recipes(
     db: AsyncSession = Depends(get_db),
 ) -> PaginatedRecipeResponse:
     """List recipes accessible to the user with optional filters and pagination."""
+    logger.debug(
+        "Listing recipes: user_id=%s, page=%d, page_size=%d, category=%s",
+        current_user.id, page, page_size, category
+    )
     # Get user's group IDs
     group_result = await db.execute(
         select(GroupMember.group_id).where(GroupMember.user_id == current_user.id)
@@ -490,6 +498,7 @@ async def update_recipe(
     db: AsyncSession = Depends(get_db),
 ) -> RecipeResponse:
     """Update a recipe."""
+    logger.info("Updating recipe: recipe_id=%s, user_id=%s", recipe_id, current_user.id)
     result = await db.execute(
         select(Recipe).where(
             Recipe.id == recipe_id,
@@ -499,6 +508,7 @@ async def update_recipe(
     recipe = result.scalar_one_or_none()
 
     if not recipe:
+        logger.warning("Recipe not found for update: recipe_id=%s", recipe_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipe not found",
@@ -519,6 +529,7 @@ async def update_recipe(
         can_edit = group_result.scalar_one_or_none() is not None
 
     if not can_edit:
+        logger.warning("Unauthorized recipe update attempt: recipe_id=%s, user_id=%s", recipe_id, current_user.id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to update this recipe",
@@ -579,6 +590,7 @@ async def delete_recipe(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     """Soft delete a recipe."""
+    logger.info("Deleting recipe: recipe_id=%s, user_id=%s", recipe_id, current_user.id)
     result = await db.execute(
         select(Recipe).where(
             Recipe.id == recipe_id,
@@ -588,12 +600,14 @@ async def delete_recipe(
     recipe = result.scalar_one_or_none()
 
     if not recipe:
+        logger.warning("Recipe not found for deletion: recipe_id=%s", recipe_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipe not found",
         )
 
     if recipe.owner_id != current_user.id and not current_user.is_admin:
+        logger.warning("Unauthorized recipe deletion attempt: recipe_id=%s, user_id=%s", recipe_id, current_user.id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this recipe",
@@ -776,6 +790,7 @@ async def upload_recipe_image(
     db: AsyncSession = Depends(get_db),
 ) -> RecipeResponse:
     """Upload an image for a recipe."""
+    logger.info("Uploading image for recipe: recipe_id=%s, user_id=%s", recipe_id, current_user.id)
     # Check if recipe exists and user has permission
     result = await db.execute(
         select(Recipe).where(
@@ -786,12 +801,14 @@ async def upload_recipe_image(
     recipe = result.scalar_one_or_none()
 
     if not recipe:
+        logger.warning("Recipe not found for image upload: recipe_id=%s", recipe_id)
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Recipe not found",
         )
 
     if recipe.owner_id != current_user.id:
+        logger.warning("Unauthorized image upload attempt: recipe_id=%s, user_id=%s", recipe_id, current_user.id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to modify this recipe",
@@ -799,6 +816,7 @@ async def upload_recipe_image(
 
     # Validate file type
     if not file.content_type or not file.content_type.startswith("image/"):
+        logger.warning("Invalid file type for image upload: %s", file.content_type)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File must be an image",
@@ -818,7 +836,9 @@ async def upload_recipe_image(
         content = await file.read()
         with open(file_path, "wb") as f:
             f.write(content)
+        logger.info("Image saved successfully: recipe_id=%s, filename=%s", recipe_id, filename)
     except Exception as e:
+        logger.error("Failed to save image for recipe_id=%s: %s", recipe_id, str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to save image: {str(e)}",

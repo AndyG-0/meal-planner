@@ -1,5 +1,6 @@
 """Calendar endpoints."""
 
+import logging
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -22,6 +23,7 @@ from app.schemas import (
 )
 from app.services.calendar_prepopulate import CalendarPrepopulateService
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/calendars", tags=["Calendars"])
 
 
@@ -32,6 +34,7 @@ async def create_calendar(
     db: AsyncSession = Depends(get_db),
 ) -> Calendar:
     """Create a new calendar."""
+    logger.info("Creating calendar: user_id=%s", current_user.id)
     calendar = Calendar(
         **calendar_data.model_dump(),
         owner_id=current_user.id,
@@ -39,6 +42,7 @@ async def create_calendar(
     db.add(calendar)
     await db.commit()
     await db.refresh(calendar)
+    logger.info("Calendar created successfully: calendar_id=%s", calendar.id)
     return calendar
 
 
