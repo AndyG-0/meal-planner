@@ -37,7 +37,7 @@ describe('RecipeSearchDialog', () => {
       expect(recipeService.getRecipes).toHaveBeenCalled();
     });
 
-    expect(screen.getByText(/Start searching to see recipes/i)).toBeTruthy();
+    expect(screen.getByText(/Start searching to see recipes/i)).toBeInTheDocument();
   });
 
   it('should handle paginated recipe response with items', async () => {
@@ -60,11 +60,11 @@ describe('RecipeSearchDialog', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Test Recipe 1')).toBeTruthy();
-      expect(screen.getByText('Test Recipe 2')).toBeTruthy();
+      expect(screen.getByText('Test Recipe 1')).toBeInTheDocument();
+      expect(screen.getByText('Test Recipe 2')).toBeInTheDocument();
     });
 
-    expect(screen.getByText(/2 recipes found/i)).toBeTruthy();
+    expect(screen.getByText(/2 recipes found/i)).toBeInTheDocument();
   });
 
   it('should handle backend returning object without items property gracefully', async () => {
@@ -87,7 +87,7 @@ describe('RecipeSearchDialog', () => {
     });
 
     // Should show empty state instead of crashing
-    expect(screen.getByText(/Start searching to see recipes/i)).toBeTruthy();
+    expect(screen.getByText(/Start searching to see recipes/i)).toBeInTheDocument();
   });
 
   it('should allow selecting a recipe', async () => {
@@ -111,7 +111,7 @@ describe('RecipeSearchDialog', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Test Recipe 1')).toBeTruthy();
+      expect(screen.getByText('Test Recipe 1')).toBeInTheDocument();
     });
 
     // Click the recipe to select it
