@@ -16,6 +16,30 @@ describe('authService', () => {
     vi.clearAllMocks();
   });
 
+  it('should check if setup is required', async () => {
+    const mockResponse = { data: { setup_required: true } };
+    api.get.mockResolvedValue(mockResponse);
+
+    const result = await authService.checkSetupRequired();
+
+    expect(api.get).toHaveBeenCalledWith('/auth/setup-required');
+    expect(result).toEqual(mockResponse.data);
+  });
+
+  it('should setup admin user', async () => {
+    const mockResponse = { data: { id: 1, username: 'admin', is_admin: true } };
+    api.post.mockResolvedValue(mockResponse);
+
+    const result = await authService.setupAdmin('admin', 'admin@example.com', 'password');
+
+    expect(api.post).toHaveBeenCalledWith('/auth/setup-admin', {
+      username: 'admin',
+      email: 'admin@example.com',
+      password: 'password',
+    });
+    expect(result).toEqual(mockResponse.data);
+  });
+
   it('should register a user', async () => {
     const mockResponse = { data: { id: 1, username: 'testuser' } };
     api.post.mockResolvedValue(mockResponse);
