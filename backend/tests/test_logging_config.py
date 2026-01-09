@@ -12,9 +12,14 @@ class TestSanitizingFilter:
 
     def setup_method(self):
         """Set up test logger with SanitizingFilter."""
-        self.logger = logging.getLogger("test_sanitizing_filter")
+        # Use a unique logger name for each test to avoid conflicts
+        import uuid
+        logger_name = f"test_sanitizing_filter_{uuid.uuid4().hex[:8]}"
+        self.logger = logging.getLogger(logger_name)
         self.logger.setLevel(logging.DEBUG)
         self.logger.handlers.clear()
+        # Prevent propagation to avoid interference with root logger
+        self.logger.propagate = False
 
         # Create a custom handler that captures log records
         self.log_records = []
@@ -34,8 +39,13 @@ class TestSanitizingFilter:
 
     def teardown_method(self):
         """Clean up logger after each test."""
-        self.logger.handlers.clear()
+        # Remove all handlers and filters
+        for handler in self.logger.handlers[:]:
+            handler.close()
+            self.logger.removeHandler(handler)
         self.log_records.clear()
+        # Reset propagate flag
+        self.logger.propagate = True
 
     def test_sanitize_removes_newlines(self):
         """Test that newlines are removed from log messages."""
