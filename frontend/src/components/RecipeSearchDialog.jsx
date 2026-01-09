@@ -105,7 +105,8 @@ export default function RecipeSearchDialog({ open, onClose, onSelect, title = "S
       }
       
       const data = await recipeService.getRecipes(params)
-      setRecipes(data)
+      // Backend returns paginated response: { items: [], pagination: {} }
+      setRecipes(data.items || [])
     } catch (err) {
       console.error('Failed to search recipes:', err)
     } finally {
