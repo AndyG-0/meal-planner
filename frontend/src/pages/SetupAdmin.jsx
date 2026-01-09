@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Container,
@@ -8,6 +8,7 @@ import {
   Button,
   Alert,
   Paper,
+  CircularProgress,
 } from '@mui/material'
 import { authService } from '../services'
 import { useAuthStore } from '../store/authStore'
@@ -20,9 +21,44 @@ export default function SetupAdmin() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [checkingSetup, setCheckingSetup] = useState(true)
+  const [setupRequired, setSetupRequired] = useState(false)
   const navigate = useNavigate()
   const setAuth = useAuthStore((state) => state.setAuth)
   const markSetupComplete = useSetupStore((state) => state.markSetupComplete)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const verifySetup = async () => {
+      try {
+        const { setup_required } = await authService.checkSetupRequired()
+
+        if (!isMounted) return
+
+        if (setup_required) {
+          setSetupRequired(true)
+        } else {
+          navigate('/login', { replace: true })
+        }
+      } catch (err) {
+        console.error('Error verifying setup status:', err)
+        if (isMounted) {
+          navigate('/login', { replace: true })
+        }
+      } finally {
+        if (isMounted) {
+          setCheckingSetup(false)
+        }
+      }
+    }
+
+    verifySetup()
+
+    return () => {
+      isMounted = false
+    }
+  }, [navigate])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -61,6 +97,26 @@ export default function SetupAdmin() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (checkingSetup) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (!setupRequired) {
+    // In case navigation hasn't occurred yet, avoid rendering the setup page
+    return null
   }
 
   return (
@@ -105,6 +161,7 @@ export default function SetupAdmin() {
               id="email"
               label="Email Address"
               name="email"
+              type="email"
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
