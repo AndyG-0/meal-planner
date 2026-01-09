@@ -26,10 +26,10 @@ class SanitizingFilter(logging.Filter):
         # Sanitize all arguments
         if record.args:
             if isinstance(record.args, dict):
-                record.args = {k: self._sanitize(v) if isinstance(v, str) else v
+                record.args = {k: self._sanitize(v) if isinstance(v, str) or v is None else v
                              for k, v in record.args.items()}
             elif isinstance(record.args, tuple):
-                record.args = tuple(self._sanitize(arg) if isinstance(arg, str) else arg
+                record.args = tuple(self._sanitize(arg) if isinstance(arg, str) or arg is None else arg
                                   for arg in record.args)
 
         return True
