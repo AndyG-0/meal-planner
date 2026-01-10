@@ -13,6 +13,7 @@ import {
 import { authService } from '../services'
 import { useAuthStore } from '../store/authStore'
 import { useSetupStore } from '../store/setupStore'
+import { getErrorMessage } from '../utils/errorHandler'
 
 export default function SetupAdmin() {
   const [username, setUsername] = useState('')
@@ -93,7 +94,7 @@ export default function SetupAdmin() {
       // Navigate to dashboard
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Setup failed')
+      setError(getErrorMessage(err.response?.data?.detail, 'Setup failed'))
     } finally {
       setLoading(false)
     }

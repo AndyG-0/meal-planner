@@ -203,6 +203,16 @@ async def add_meal_to_calendar(
     db.add(meal)
     await db.commit()
     await db.refresh(meal)
+
+    # Load the recipe relationship to populate recipe_name
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(CalendarMeal)
+        .where(CalendarMeal.id == meal.id)
+        .options(selectinload(CalendarMeal.recipe))
+    )
+    meal = result.scalar_one()
+
     return meal
 
 

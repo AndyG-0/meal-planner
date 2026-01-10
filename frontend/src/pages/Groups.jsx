@@ -36,6 +36,7 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material'
 import { groupService, authService } from '../services'
+import { getErrorMessage } from '../utils/errorHandler'
 
 export default function Groups() {
   const [groups, setGroups] = useState([])
@@ -66,7 +67,7 @@ export default function Groups() {
       setGroups(data)
       setError('')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load groups')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to load groups'))
     } finally {
       setLoading(false)
     }
@@ -85,7 +86,7 @@ export default function Groups() {
       setNewGroupName('')
       setSuccess('Group created successfully')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create group')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to create group'))
     }
   }
 
@@ -107,7 +108,7 @@ export default function Groups() {
       setEditingGroup(null)
       setSuccess('Group updated successfully')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to update group')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to update group'))
     }
   }
 
@@ -121,7 +122,7 @@ export default function Groups() {
       await loadGroups()
       setSuccess('Group deleted successfully')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to delete group')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to delete group'))
     }
   }
 
@@ -132,7 +133,7 @@ export default function Groups() {
       setGroupMembers(members)
       setViewDialog(true)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load group details')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to load group details'))
     }
   }
 
@@ -147,7 +148,7 @@ export default function Groups() {
       setGroupMembers(members)
       setSuccess('Member removed successfully')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to remove member')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to remove member'))
     }
   }
 
@@ -195,7 +196,7 @@ export default function Groups() {
       const members = await groupService.getGroupMembers(viewingGroup.id)
       setGroupMembers(members)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to add member')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to add member'))
     }
   }
 
