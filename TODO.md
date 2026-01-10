@@ -61,6 +61,6 @@
 * ~~Enable staple recipes (like dough, sauce) to be used as ingredients in other recipes~~ (Frontend UI completed - RecipeForm supports staple ingredient selection. Backend integration needs migration from JSON ingredients column to RecipeIngredient table)
 * ~~Copy a day, month or a week in the meal planner to another day/week/month~~
 * ~~Add the ability for the grocery list to be printed or exported to a txt file or csv.~~
-* Have a way for the user to manage calendars and be able to switch calendars.
+* ~~Have a way for the user to manage calendars and be able to switch calendars.~~
 * Create a new entity for simple menu items which do not require full recipes. Ex. Frozen chicken nuggets, frozen fries, etc. These need to be searchable along with the full recipes. 
 * Prepopulate the database with many of the menu items so there is something to choose from to begin with.

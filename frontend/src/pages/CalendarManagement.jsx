@@ -44,7 +44,7 @@ const VISIBILITY_OPTIONS = [
 export default function CalendarManagement() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const { setSelectedCalendar } = useCalendarStore()
+  const { setSelectedCalendar, updateCalendar, removeCalendar } = useCalendarStore()
   
   const [calendars, setCalendars] = useState([])
   const [groups, setGroups] = useState([])
@@ -145,9 +145,16 @@ export default function CalendarManagement() {
   const handleEditSave = async () => {
     if (!editingCalendar) return
 
+    // Validate calendar name is not empty
+    if (!editFormData.name || editFormData.name.trim() === '') {
+      setError('Calendar name cannot be empty')
+      return
+    }
+
     try {
       const updated = await calendarService.updateCalendar(editingCalendar.id, editFormData)
       setCalendars(calendars.map(c => c.id === updated.id ? updated : c))
+      updateCalendar(updated) // Update global store
       setOpenEdit(false)
       setEditingCalendar(null)
     } catch (err) {
@@ -166,6 +173,7 @@ export default function CalendarManagement() {
     try {
       await calendarService.deleteCalendar(deletingCalendar.id)
       setCalendars(calendars.filter(c => c.id !== deletingCalendar.id))
+      removeCalendar(deletingCalendar.id) // Update global store
       setOpenDelete(false)
       setDeletingCalendar(null)
     } catch (err) {
