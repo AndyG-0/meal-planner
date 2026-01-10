@@ -210,6 +210,11 @@ class CalendarMeal(Base):
     calendar = relationship("Calendar", back_populates="meals")
     recipe = relationship("Recipe", back_populates="calendar_meals")
 
+    @property
+    def recipe_name(self) -> str | None:
+        """Get the recipe name from the loaded relationship."""
+        return self.recipe.title if self.recipe else None
+
 
 class Group(Base):
     """Group model for sharing."""
