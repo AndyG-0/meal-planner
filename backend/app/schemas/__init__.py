@@ -357,6 +357,7 @@ class CalendarResponse(CalendarBase):
     owner_id: int
     created_at: datetime
     updated_at: datetime | None = None
+    can_edit: bool | None = Field(None, description="Whether the current user can edit this calendar")
 
     model_config = {"from_attributes": True}
 

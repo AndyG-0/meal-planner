@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies import get_current_active_user
 from app.database import get_db
-from app.models import Calendar, CalendarMeal, Recipe, User
+from app.models import Calendar, CalendarMeal, GroupMember, Recipe, User
 from app.schemas import (
     CalendarCopyRequest,
     CalendarCopyResponse,
@@ -27,12 +27,47 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/calendars", tags=["Calendars"])
 
 
+async def check_calendar_access(
+    calendar: Calendar,
+    user: User,
+    db: AsyncSession,
+    require_write: bool = False
+) -> tuple[bool, bool]:
+    """Check if user has access to a calendar.
+
+    Returns:
+        tuple: (can_access, can_edit)
+    """
+    # Owner always has full access
+    if calendar.owner_id == user.id:
+        return True, True
+
+    # Public calendars are readable by everyone
+    if calendar.visibility == "public":
+        return True, False
+
+    # Group calendars - check membership
+    if calendar.visibility == "group" and calendar.group_id:
+        result = await db.execute(
+            select(GroupMember).where(
+                GroupMember.group_id == calendar.group_id,
+                GroupMember.user_id == user.id
+            )
+        )
+        member = result.scalar_one_or_none()
+        if member:
+            return True, False  # Can view but not edit group calendars
+
+    # Private calendars - only owner can access
+    return False, False
+
+
 @router.post("", response_model=CalendarResponse, status_code=status.HTTP_201_CREATED)
 async def create_calendar(
     calendar_data: CalendarCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-) -> Calendar:
+) -> dict:
     """Create a new calendar."""
     logger.info("Creating calendar: user_id=%s", current_user.id)
     calendar = Calendar(
@@ -43,7 +78,19 @@ async def create_calendar(
     await db.commit()
     await db.refresh(calendar)
     logger.info("Calendar created successfully: calendar_id=%s", calendar.id)
-    return calendar
+
+    # Return calendar with can_edit field set to True (user is the owner)
+    return {
+        "id": calendar.id,
+        "name": calendar.name,
+        "owner_id": calendar.owner_id,
+        "visibility": calendar.visibility,
+        "group_id": calendar.group_id,
+        "is_shared": calendar.is_shared,
+        "created_at": calendar.created_at,
+        "updated_at": calendar.updated_at,
+        "can_edit": True,
+    }
 
 
 @router.get("", response_model=list[CalendarResponse])
@@ -52,13 +99,63 @@ async def list_calendars(
     db: AsyncSession = Depends(get_db),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
-) -> list[Calendar]:
-    """List user's calendars with pagination."""
-    result = await db.execute(
-        select(Calendar).where(Calendar.owner_id == current_user.id).offset(skip).limit(limit)
+    search: str | None = Query(None, description="Search calendars by name"),
+) -> list[dict]:
+    """List calendars accessible to the user with pagination and search.
+
+    Includes:
+    - Calendars owned by the user
+    - Public calendars
+    - Group calendars the user is a member of
+    """
+    from sqlalchemy import or_
+
+    from app.models import GroupMember
+
+    # Build query to get calendars the user can access
+    # 1. Owned by user
+    # 2. Public calendars
+    # 3. Group calendars where user is a member
+
+    query = select(Calendar).where(
+        or_(
+            Calendar.owner_id == current_user.id,  # User's own calendars
+            Calendar.visibility == "public",  # Public calendars
+            # Group calendars where user is a member
+            Calendar.group_id.in_(
+                select(GroupMember.group_id).where(GroupMember.user_id == current_user.id)
+            )
+        )
     )
+
+    # Add search filter if provided
+    if search:
+        query = query.where(Calendar.name.ilike(f"%{search}%"))
+
+    # Apply pagination
+    query = query.offset(skip).limit(limit)
+
+    result = await db.execute(query)
     calendars = result.scalars().all()
-    return list(calendars)
+
+    # Add can_edit field to each calendar
+    response_calendars = []
+    for calendar in calendars:
+        _, can_edit = await check_calendar_access(calendar, current_user, db)
+        calendar_dict = {
+            "id": calendar.id,
+            "name": calendar.name,
+            "owner_id": calendar.owner_id,
+            "visibility": calendar.visibility,
+            "group_id": calendar.group_id,
+            "is_shared": calendar.is_shared,
+            "created_at": calendar.created_at,
+            "updated_at": calendar.updated_at,
+            "can_edit": can_edit,
+        }
+        response_calendars.append(calendar_dict)
+
+    return response_calendars
 
 
 @router.get("/{calendar_id}", response_model=CalendarResponse)
@@ -66,7 +163,7 @@ async def get_calendar(
     calendar_id: int,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
-) -> Calendar:
+) -> dict:
     """Get a calendar by ID."""
     result = await db.execute(select(Calendar).where(Calendar.id == calendar_id))
     calendar = result.scalar_one_or_none()
@@ -78,14 +175,24 @@ async def get_calendar(
         )
 
     # Check access permissions
-    if calendar.owner_id != current_user.id:
-        # TODO: Check group membership for shared calendars
+    can_access, can_edit = await check_calendar_access(calendar, current_user, db)
+    if not can_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this calendar",
         )
 
-    return calendar
+    return {
+        "id": calendar.id,
+        "name": calendar.name,
+        "owner_id": calendar.owner_id,
+        "visibility": calendar.visibility,
+        "group_id": calendar.group_id,
+        "is_shared": calendar.is_shared,
+        "created_at": calendar.created_at,
+        "updated_at": calendar.updated_at,
+        "can_edit": can_edit,
+    }
 
 
 @router.put("/{calendar_id}", response_model=CalendarResponse)
@@ -237,7 +344,9 @@ async def list_calendar_meals(
             detail="Calendar not found",
         )
 
-    if calendar.owner_id != current_user.id:
+    # Check access permissions
+    can_access, _ = await check_calendar_access(calendar, current_user, db)
+    if not can_access:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this calendar",

@@ -167,6 +167,13 @@ What would you like to create today?`,
       const response = await api.post('/ai/execute-tool', pendingAction.tool_call)
 
       if (response.data.success) {
+        // Send tool response message
+        const toolResultMessage = {
+          role: 'tool',
+          tool_call_id: pendingAction.tool_call.id,
+          content: JSON.stringify(response.data)
+        }
+        
         const successMessage = {
           role: 'assistant',
           content: `Great! I've ${
@@ -174,7 +181,7 @@ What would you like to create today?`,
           } the recipe "${pendingAction.recipe_data.name}". You can find it in your recipes!`,
         }
 
-        setMessages((prev) => [...prev, successMessage])
+        setMessages((prev) => [...prev, toolResultMessage, successMessage])
         setPendingAction(null)
 
         // Notify parent component
@@ -193,12 +200,21 @@ What would you like to create today?`,
   }
 
   const handleCancelAction = () => {
-    setPendingAction(null)
+    // Send a tool response indicating the cancellation
+    const toolResultMessage = {
+      role: 'tool',
+      tool_call_id: pendingAction.tool_call.id,
+      content: JSON.stringify({ success: false, cancelled: true, message: 'User cancelled the action' })
+    }
+    
     const cancelMessage = {
       role: 'assistant',
       content: 'No problem! Let me know if you want to make any changes, or we can start over with a different recipe.',
     }
-    setMessages((prev) => [...prev, cancelMessage])
+    
+    // Add both the tool result and the cancel message
+    setMessages((prev) => [...prev, toolResultMessage, cancelMessage])
+    setPendingAction(null)
   }
 
   const handleKeyPress = (e) => {

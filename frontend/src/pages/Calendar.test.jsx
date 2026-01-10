@@ -30,6 +30,14 @@ vi.mock('../store/calendarStore', () => ({
     setCalendars: vi.fn(),
     setSelectedCalendar: vi.fn(),
     setMeals: vi.fn(),
+    addMeal: vi.fn(),
+    removeMeal: vi.fn(),
+    loading: false,
+    setLoading: vi.fn(),
+    error: null,
+    setError: vi.fn(),
+    clearError: vi.fn(),
+    getLastActiveCalendarId: vi.fn(() => null),
   })),
 }));
 

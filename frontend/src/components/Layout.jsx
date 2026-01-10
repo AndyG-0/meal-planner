@@ -26,6 +26,7 @@ import {
   Brightness4 as DarkModeIcon,
   Brightness7 as LightModeIcon,
   Folder as FolderIcon,
+  CalendarToday as CalendarTodayIcon,
 } from '@mui/icons-material'
 import { useState } from 'react'
 import { useAuthStore } from '../store/authStore'
@@ -53,6 +54,7 @@ export default function Layout() {
     { text: 'Recipes', icon: <Restaurant />, path: '/recipes' },
     { text: 'Collections', icon: <FolderIcon />, path: '/collections' },
     { text: 'Calendar', icon: <CalendarMonth />, path: '/calendar' },
+    { text: 'Calendar Management', icon: <CalendarTodayIcon />, path: '/calendar-management' },
     { text: 'Grocery List', icon: <ShoppingCart />, path: '/grocery-lists' },
     { text: 'Groups', icon: <GroupIcon />, path: '/groups' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },

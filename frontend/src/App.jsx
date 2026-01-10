@@ -8,6 +8,7 @@ import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import Recipes from './pages/Recipes'
 import Calendar from './pages/Calendar'
+import CalendarManagement from './pages/CalendarManagement'
 import GroceryList from './pages/GroceryList'
 import Groups from './pages/Groups'
 import AdminDashboard from './pages/AdminDashboard'
@@ -130,6 +131,7 @@ function App() {
         <Route index element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="recipes" element={<ProtectedRoute><Recipes /></ProtectedRoute>} />
         <Route path="calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+        <Route path="calendar-management" element={<ProtectedRoute><CalendarManagement /></ProtectedRoute>} />
         <Route path="grocery-lists" element={<ProtectedRoute><GroceryList /></ProtectedRoute>} />
         <Route path="groups" element={<ProtectedRoute><Groups /></ProtectedRoute>} />
         <Route path="collections" element={<ProtectedRoute><Collections /></ProtectedRoute>} />
