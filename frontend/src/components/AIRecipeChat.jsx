@@ -200,6 +200,8 @@ What would you like to create today?`,
   }
 
   const handleCancelAction = () => {
+    if (!pendingAction) return
+
     // Send a tool response indicating the cancellation
     const toolResultMessage = {
       role: 'tool',
