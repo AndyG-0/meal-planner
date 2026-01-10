@@ -37,6 +37,7 @@ import { calendarService, groupService } from '../services'
 import { useCalendarStore } from '../store/calendarStore'
 import { useAuthStore } from '../store/authStore'
 import RecipeSearchDialog from '../components/RecipeSearchDialog'
+import { getErrorMessage } from '../utils/errorHandler'
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
 const VISIBILITY_OPTIONS = [
@@ -125,7 +126,7 @@ export default function Calendar() {
         setSelectedCalendar(data[0])
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load calendars')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to load calendars'))
     }
   }
 
@@ -151,7 +152,7 @@ export default function Calendar() {
       })
       setMeals(data)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load meals')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to load meals'))
     } finally {
       setLoading(false)
     }
@@ -183,7 +184,7 @@ export default function Calendar() {
       setOpenCreateCalendar(false)
       setNewCalendar({ name: '', visibility: 'private', group_id: null })
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create calendar')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to create calendar'))
     }
   }
 
@@ -194,11 +195,16 @@ export default function Calendar() {
   }
 
   const handleRecipeSelect = async (recipe) => {
-    if (!recipe || !selectedCalendar) return
+    if (!recipe || !selectedCalendar || !selectedDate) return
 
     try {
+      // Set time to noon to avoid timezone issues
+      const mealDateTime = new Date(selectedDate)
+      mealDateTime.setHours(12, 0, 0, 0)
+      
       const mealData = {
         recipe_id: recipe.id,
+        meal_date: mealDateTime.toISOString(),
         meal_type: selectedMealType,
       }
       const newMeal = await calendarService.addMealToCalendar(
@@ -208,7 +214,7 @@ export default function Calendar() {
       addMeal(newMeal)
       setOpenAddMeal(false)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to add meal')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to add meal'))
     }
   }
 
@@ -219,7 +225,7 @@ export default function Calendar() {
       await calendarService.removeMealFromCalendar(selectedCalendar.id, mealId)
       removeMeal(mealId)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to delete meal')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to delete meal'))
     }
   }
 
@@ -269,7 +275,7 @@ export default function Calendar() {
       setError(null)
       // Could add a success state/snackbar here
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to prepopulate calendar')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to prepopulate calendar'))
     } finally {
       setPrepopulateLoading(false)
     }
@@ -310,7 +316,7 @@ export default function Calendar() {
       setError(null)
       // Could add a success state/snackbar here
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to copy calendar period')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to copy calendar period'))
     } finally {
       setCopyLoading(false)
     }

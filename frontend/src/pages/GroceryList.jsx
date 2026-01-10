@@ -35,6 +35,7 @@ import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers'
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 import { format } from 'date-fns'
 import { groceryListService, calendarService } from '../services'
+import { getErrorMessage } from '../utils/errorHandler'
 
 export default function GroceryList() {
   const [lists, setLists] = useState([])
@@ -71,7 +72,7 @@ export default function GroceryList() {
         setSelectedList(data[0])
       }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load grocery lists')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to load grocery lists'))
     } finally {
       setLoading(false)
     }
@@ -107,7 +108,7 @@ export default function GroceryList() {
       setDateFrom(null)
       setDateTo(null)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to create grocery list')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to create grocery list'))
     }
   }
 
@@ -121,7 +122,7 @@ export default function GroceryList() {
           setSelectedList(newLists.length > 0 ? newLists[0] : null)
         }
       } catch (err) {
-        setError(err.response?.data?.detail || 'Failed to delete list')
+        setError(getErrorMessage(err.response?.data?.detail, 'Failed to delete list'))
       }
     }
   }
@@ -181,7 +182,7 @@ export default function GroceryList() {
       setActionValue('')
       setError(null)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to perform action')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to perform action'))
     } finally {
       setLoading(false)
     }
@@ -243,7 +244,7 @@ export default function GroceryList() {
       setLists(lists.map((l) => (l.id === selectedList.id ? updatedList : l)))
       setOpenAddItem(false)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to save item')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to save item'))
     }
   }
 
@@ -261,7 +262,7 @@ export default function GroceryList() {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to export CSV')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to export CSV'))
     }
   }
 
@@ -279,7 +280,7 @@ export default function GroceryList() {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to export TXT')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to export TXT'))
     }
   }
 
@@ -317,7 +318,7 @@ export default function GroceryList() {
 
       document.body.appendChild(iframe)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to open print view')
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to open print view'))
     }
   }
 
