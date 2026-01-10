@@ -32,24 +32,42 @@ export const useCalendarStore = create((set) => ({
     set((state) => ({ calendars: [...state.calendars, calendar] })),
 
   updateCalendar: (updatedCalendar) =>
-    set((state) => ({
-      calendars: state.calendars.map((c) =>
-        c.id === updatedCalendar.id ? updatedCalendar : c
-      ),
-      selectedCalendar:
+    set((state) => {
+      const isSelected =
         state.selectedCalendar?.id === updatedCalendar.id
-          ? updatedCalendar
-          : state.selectedCalendar,
-    })),
+      const updatedSelectedCalendar = isSelected
+        ? updatedCalendar
+        : state.selectedCalendar
+
+      if (isSelected && updatedCalendar?.id) {
+        localStorage.setItem(
+          LAST_ACTIVE_CALENDAR_KEY,
+          updatedCalendar.id.toString()
+        )
+      }
+
+      return {
+        calendars: state.calendars.map((c) =>
+          c.id === updatedCalendar.id ? updatedCalendar : c
+        ),
+        selectedCalendar: updatedSelectedCalendar,
+      }
+    }),
 
   removeCalendar: (calendarId) =>
-    set((state) => ({
-      calendars: state.calendars.filter((c) => c.id !== calendarId),
-      selectedCalendar:
+    set((state) => {
+      const isRemovingSelected =
         state.selectedCalendar?.id === calendarId
-          ? null
-          : state.selectedCalendar,
-    })),
+
+      if (isRemovingSelected) {
+        localStorage.removeItem(LAST_ACTIVE_CALENDAR_KEY)
+      }
+
+      return {
+        calendars: state.calendars.filter((c) => c.id !== calendarId),
+        selectedCalendar: isRemovingSelected ? null : state.selectedCalendar,
+      }
+    }),
 
   addMeal: (meal) =>
     set((state) => ({ meals: [...state.meals, meal] })),
