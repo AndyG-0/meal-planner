@@ -23,6 +23,8 @@ import {
   FormControlLabel,
   FormGroup,
   FormLabel,
+  Chip,
+  TablePagination,
 } from '@mui/material'
 import {
   ChevronLeft,
@@ -33,18 +35,14 @@ import {
   ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material'
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns'
-import { calendarService, groupService } from '../services'
+import { calendarService } from '../services'
 import { useCalendarStore } from '../store/calendarStore'
 import { useAuthStore } from '../store/authStore'
 import RecipeSearchDialog from '../components/RecipeSearchDialog'
+import CreateCalendarDialog from '../components/CreateCalendarDialog'
 import { getErrorMessage } from '../utils/errorHandler'
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack']
-const VISIBILITY_OPTIONS = [
-  { value: 'private', label: 'Private (Only me)' },
-  { value: 'group', label: 'Group (Shared with group)' },
-  { value: 'public', label: 'Public (Everyone)' },
-]
 
 export default function Calendar() {
   const { user } = useAuthStore()
@@ -62,6 +60,7 @@ export default function Calendar() {
     error,
     setError,
     clearError,
+    getLastActiveCalendarId,
   } = useCalendarStore()
 
   // Get week start day from user preferences, default to Sunday (0)
@@ -75,14 +74,17 @@ export default function Calendar() {
   const [openCreateCalendar, setOpenCreateCalendar] = useState(false)
   const [openPrepopulate, setOpenPrepopulate] = useState(false)
   const [openCopy, setOpenCopy] = useState(false)
+  const [openCalendarSelector, setOpenCalendarSelector] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedMealType, setSelectedMealType] = useState('dinner')
-  const [groups, setGroups] = useState([])
-  const [newCalendar, setNewCalendar] = useState({
-    name: '',
-    visibility: 'private',
-    group_id: null,
-  })
+  
+  // Calendar selector state
+  const [calendarSearchTerm, setCalendarSearchTerm] = useState('')
+  const [calendarSearchQuery, setCalendarSearchQuery] = useState('')
+  const [calendarPage, setCalendarPage] = useState(0)
+  const [calendarRowsPerPage, setCalendarRowsPerPage] = useState(10)
+  const [availableCalendars, setAvailableCalendars] = useState([])
+  const [loadingCalendars, setLoadingCalendars] = useState(false)
   const [prepopulateConfig, setPrepopulateConfig] = useState({
     start_date: new Date().toISOString().split('T')[0],
     period: 'week',
@@ -107,7 +109,6 @@ export default function Calendar() {
 
   useEffect(() => {
     loadCalendars()
-    loadGroups()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -118,24 +119,34 @@ export default function Calendar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCalendar, currentWeekStart])
 
+  useEffect(() => {
+    if (openCalendarSelector) {
+      loadAvailableCalendars()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calendarPage, calendarRowsPerPage, calendarSearchQuery, openCalendarSelector])
+
   const loadCalendars = async () => {
     try {
       const data = await calendarService.getCalendars()
       setCalendars(data)
+      
+      // Try to restore last active calendar
+      const lastCalendarId = getLastActiveCalendarId()
+      if (lastCalendarId && data.length > 0) {
+        const lastCalendar = data.find(c => c.id === lastCalendarId)
+        if (lastCalendar) {
+          setSelectedCalendar(lastCalendar)
+          return
+        }
+      }
+      
+      // Fallback to first calendar if no last active or not found
       if (data.length > 0 && !selectedCalendar) {
         setSelectedCalendar(data[0])
       }
     } catch (err) {
       setError(getErrorMessage(err.response?.data?.detail, 'Failed to load calendars'))
-    }
-  }
-
-  const loadGroups = async () => {
-    try {
-      const data = await groupService.getGroups()
-      setGroups(data)
-    } catch (err) {
-      console.error('Failed to load groups:', err)
     }
   }
 
@@ -166,26 +177,9 @@ export default function Calendar() {
     setCurrentWeekStart(addDays(currentWeekStart, 7))
   }
 
-  const handleCreateCalendar = async () => {
-    if (!newCalendar.name.trim()) {
-      setError('Calendar name is required')
-      return
-    }
-
-    try {
-      const calendarData = {
-        name: newCalendar.name,
-        visibility: newCalendar.visibility,
-        ...(newCalendar.visibility === 'group' && newCalendar.group_id && { group_id: parseInt(newCalendar.group_id) }),
-      }
-      const created = await calendarService.createCalendar(calendarData)
-      setCalendars([...calendars, created])
-      setSelectedCalendar(created)
-      setOpenCreateCalendar(false)
-      setNewCalendar({ name: '', visibility: 'private', group_id: null })
-    } catch (err) {
-      setError(getErrorMessage(err.response?.data?.detail, 'Failed to create calendar'))
-    }
+  const handleCalendarCreated = (created) => {
+    setCalendars([...calendars, created])
+    setSelectedCalendar(created)
   }
 
   const handleAddMealClick = (date, mealType) => {
@@ -322,6 +316,49 @@ export default function Calendar() {
     }
   }
 
+  const handleOpenCalendarSelector = async () => {
+    setOpenCalendarSelector(true)
+    await loadAvailableCalendars()
+  }
+
+  const loadAvailableCalendars = async () => {
+    setLoadingCalendars(true)
+    try {
+      const params = {
+        skip: calendarPage * calendarRowsPerPage,
+        limit: calendarRowsPerPage,
+      }
+      if (calendarSearchQuery) {
+        params.search = calendarSearchQuery
+      }
+      const data = await calendarService.getCalendars(params)
+      setAvailableCalendars(data)
+    } catch (err) {
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to load calendars'))
+    } finally {
+      setLoadingCalendars(false)
+    }
+  }
+
+  const handleCalendarSearch = () => {
+    setCalendarSearchQuery(calendarSearchTerm)
+    setCalendarPage(0)
+  }
+
+  const handleCalendarSearchKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleCalendarSearch()
+    }
+  }
+
+  const handleSelectCalendar = (calendar) => {
+    setSelectedCalendar(calendar)
+    setOpenCalendarSelector(false)
+    setCalendarSearchTerm('')
+    setCalendarSearchQuery('')
+    setCalendarPage(0)
+  }
+
   const getMealsForDateAndType = (date, mealType) => {
     return meals.filter(
       (meal) =>
@@ -351,58 +388,11 @@ export default function Calendar() {
         </Alert>
 
         {/* Create Calendar Dialog */}
-        <Dialog open={openCreateCalendar} onClose={() => setOpenCreateCalendar(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Create New Calendar</DialogTitle>
-          <DialogContent>
-            <TextField
-              autoFocus
-              fullWidth
-              label="Calendar Name"
-              value={newCalendar.name}
-              onChange={(e) => setNewCalendar({ ...newCalendar, name: e.target.value })}
-              margin="normal"
-            />
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Visibility</InputLabel>
-              <Select
-                value={newCalendar.visibility}
-                label="Visibility"
-                onChange={(e) => setNewCalendar({ ...newCalendar, visibility: e.target.value, group_id: null })}
-              >
-                {VISIBILITY_OPTIONS.map((opt) => (
-                  <MenuItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {newCalendar.visibility === 'group' && (
-              <FormControl fullWidth margin="normal">
-                <InputLabel>Group</InputLabel>
-                <Select
-                  value={newCalendar.group_id || ''}
-                  label="Group"
-                  onChange={(e) => setNewCalendar({ ...newCalendar, group_id: e.target.value })}
-                >
-                  <MenuItem value="">
-                    <em>Select a group</em>
-                  </MenuItem>
-                  {groups.map((group) => (
-                    <MenuItem key={group.id} value={group.id}>
-                      {group.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenCreateCalendar(false)}>Cancel</Button>
-            <Button onClick={handleCreateCalendar} variant="contained">
-              Create
-            </Button>
-          </DialogActions>
-        </Dialog>
+        <CreateCalendarDialog
+          open={openCreateCalendar}
+          onClose={() => setOpenCreateCalendar(false)}
+          onCalendarCreated={handleCalendarCreated}
+        />
       </Box>
     )
   }
@@ -411,7 +401,14 @@ export default function Calendar() {
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Box display="flex" alignItems="center" gap={2}>
-          <Typography variant="h4">Meal Calendar</Typography>
+          <Typography variant="h4">{selectedCalendar?.name || 'Meal Calendar'}</Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleOpenCalendarSelector}
+          >
+            Switch Calendar
+          </Button>
           <Button
             variant="outlined"
             size="small"
@@ -426,6 +423,7 @@ export default function Calendar() {
             startIcon={<AutoAwesomeIcon />}
             onClick={() => setOpenPrepopulate(true)}
             color="secondary"
+            disabled={!selectedCalendar?.can_edit}
           >
             Prepopulate
           </Button>
@@ -434,6 +432,7 @@ export default function Calendar() {
             size="small"
             startIcon={<ContentCopyIcon />}
             onClick={() => setOpenCopy(true)}
+            disabled={!selectedCalendar?.can_edit}
           >
             Copy
           </Button>
@@ -512,13 +511,13 @@ export default function Calendar() {
                       >
                         <Box
                           sx={{
-                            cursor: 'pointer',
-                            '&:hover': { bgcolor: 'action.hover' },
+                            cursor: selectedCalendar?.can_edit ? 'pointer' : 'default',
+                            '&:hover': selectedCalendar?.can_edit ? { bgcolor: 'action.hover' } : {},
                             borderRadius: 1,
                             p: 0.5,
                             minHeight: dayMeals.length === 0 ? 100 : 'auto',
                           }}
-                          onClick={() => handleAddMealClick(day, mealType)}
+                          onClick={() => selectedCalendar?.can_edit && handleAddMealClick(day, mealType)}
                         >
                           {dayMeals.map((meal) => {
                             return (
@@ -527,16 +526,18 @@ export default function Calendar() {
                                   <Typography variant="caption" noWrap>
                                     {meal.recipe_name || 'Unknown Recipe'}
                                   </Typography>
-                                  <IconButton
-                                    size="small"
-                                    sx={{ position: 'absolute', top: 0, right: 0 }}
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleDeleteMeal(meal.id)
-                                    }}
-                                  >
-                                    <DeleteIcon fontSize="small" />
-                                  </IconButton>
+                                  {selectedCalendar?.can_edit && (
+                                    <IconButton
+                                      size="small"
+                                      sx={{ position: 'absolute', top: 0, right: 0 }}
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleDeleteMeal(meal.id)
+                                      }}
+                                    >
+                                      <DeleteIcon fontSize="small" />
+                                    </IconButton>
+                                  )}
                                 </CardContent>
                               </Card>
                             )
@@ -589,58 +590,11 @@ export default function Calendar() {
       />
 
       {/* Create Calendar Dialog */}
-      <Dialog open={openCreateCalendar} onClose={() => setOpenCreateCalendar(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Create New Calendar</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            fullWidth
-            label="Calendar Name"
-            value={newCalendar.name}
-            onChange={(e) => setNewCalendar({ ...newCalendar, name: e.target.value })}
-            margin="normal"
-          />
-          <FormControl fullWidth margin="normal">
-            <InputLabel>Visibility</InputLabel>
-            <Select
-              value={newCalendar.visibility}
-              label="Visibility"
-              onChange={(e) => setNewCalendar({ ...newCalendar, visibility: e.target.value, group_id: null })}
-            >
-              {VISIBILITY_OPTIONS.map((opt) => (
-                <MenuItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {newCalendar.visibility === 'group' && (
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Group</InputLabel>
-              <Select
-                value={newCalendar.group_id || ''}
-                label="Group"
-                onChange={(e) => setNewCalendar({ ...newCalendar, group_id: e.target.value })}
-              >
-                <MenuItem value="">
-                  <em>Select a group</em>
-                </MenuItem>
-                {groups.map((group) => (
-                  <MenuItem key={group.id} value={group.id}>
-                    {group.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCreateCalendar(false)}>Cancel</Button>
-          <Button onClick={handleCreateCalendar} variant="contained">
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <CreateCalendarDialog
+        open={openCreateCalendar}
+        onClose={() => setOpenCreateCalendar(false)}
+        onCalendarCreated={handleCalendarCreated}
+      />
 
       {/* Prepopulate Calendar Dialog */}
       <Dialog open={openPrepopulate} onClose={() => setOpenPrepopulate(false)} maxWidth="sm" fullWidth>
@@ -840,6 +794,87 @@ export default function Calendar() {
           <Button onClick={handleCopy} variant="contained" disabled={copyLoading}>
             {copyLoading ? <CircularProgress size={24} /> : 'Copy'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Calendar Selector Dialog */}
+      <Dialog open={openCalendarSelector} onClose={() => setOpenCalendarSelector(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Select Calendar</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mb: 2, mt: 1, display: 'flex', gap: 2 }}>
+            <TextField
+              fullWidth
+              placeholder="Search calendars..."
+              value={calendarSearchTerm}
+              onChange={(e) => setCalendarSearchTerm(e.target.value)}
+              onKeyPress={handleCalendarSearchKeyPress}
+            />
+            <Button variant="contained" onClick={handleCalendarSearch}>
+              Search
+            </Button>
+          </Box>
+
+          {loadingCalendars ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : availableCalendars.length === 0 ? (
+            <Alert severity="info">No calendars found</Alert>
+          ) : (
+            <Box>
+              {availableCalendars.map((cal) => (
+                <Paper
+                  key={cal.id}
+                  sx={{
+                    p: 2,
+                    mb: 1,
+                    cursor: 'pointer',
+                    '&:hover': { bgcolor: 'action.hover' },
+                    bgcolor: selectedCalendar?.id === cal.id ? 'action.selected' : 'transparent',
+                  }}
+                  onClick={() => handleSelectCalendar(cal)}
+                >
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="body1" fontWeight="medium">
+                        {cal.name}
+                      </Typography>
+                      <Box display="flex" gap={1} mt={0.5}>
+                        <Chip
+                          label={cal.visibility}
+                          size="small"
+                          color={cal.visibility === 'public' ? 'success' : cal.visibility === 'group' ? 'primary' : 'default'}
+                        />
+                        {!cal.can_edit && (
+                          <Chip label="Read Only" size="small" variant="outlined" />
+                        )}
+                      </Box>
+                    </Box>
+                    {selectedCalendar?.id === cal.id && (
+                      <Chip label="Current" color="primary" size="small" />
+                    )}
+                  </Box>
+                </Paper>
+              ))}
+              {availableCalendars.length > 0 && availableCalendars.length >= calendarRowsPerPage && (
+                <TablePagination
+                  component="div"
+                  count={-1}
+                  page={calendarPage}
+                  onPageChange={(e, newPage) => setCalendarPage(newPage)}
+                  rowsPerPage={calendarRowsPerPage}
+                  onRowsPerPageChange={(e) => {
+                    setCalendarRowsPerPage(parseInt(e.target.value, 10))
+                    setCalendarPage(0)
+                  }}
+                  rowsPerPageOptions={[5, 10, 25]}
+                />
+              )}
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenCalendarSelector(false)}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -208,7 +208,7 @@ describe('calendarService', () => {
 
     const result = await calendarService.getCalendars();
 
-    expect(api.get).toHaveBeenCalledWith('/calendars');
+    expect(api.get).toHaveBeenCalledWith('/calendars', { params: {} });
     expect(result).toEqual(mockResponse.data);
   });
 

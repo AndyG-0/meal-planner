@@ -131,8 +131,8 @@ export const recipeService = {
 }
 
 export const calendarService = {
-  async getCalendars() {
-    const response = await api.get('/calendars')
+  async getCalendars(params = {}) {
+    const response = await api.get('/calendars', { params })
     return response.data
   },
 
@@ -168,6 +168,15 @@ export const calendarService = {
   async copyCalendarPeriod(calendarId, data) {
     const response = await api.post(`/calendars/${calendarId}/copy`, data)
     return response.data
+  },
+
+  async updateCalendar(calendarId, data) {
+    const response = await api.put(`/calendars/${calendarId}`, data)
+    return response.data
+  },
+
+  async deleteCalendar(calendarId) {
+    await api.delete(`/calendars/${calendarId}`)
   },
 }
 
