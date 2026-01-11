@@ -185,7 +185,7 @@ async def quick_add_menu_item(
     image_url = None
     try:
         # Initialize OpenAI service to use image search
-        openai_service = OpenAIService(db, current_user)
+        openai_service = OpenAIService(db)
         await openai_service.initialize()
 
         # Search for an image based on the title
