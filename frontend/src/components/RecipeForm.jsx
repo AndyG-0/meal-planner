@@ -304,13 +304,8 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
       }
       return ing.name && ing.name.trim()
     })
-    
-    if (validIngredients.length === 0) {
-      setError('At least one ingredient is required')
-      return
-    }
 
-    // Validate ingredients
+    // Validate ingredients (only if provided)
     for (const ing of validIngredients) {
       // Validate regular ingredients don't have measurements in name
       if (ing.ingredient_type === 'regular') {
@@ -330,7 +325,7 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
       } else {
         // Validate staple recipe is selected
         if (!ing.ingredient_recipe_id) {
-          setError('Please select a staple recipe for ingredient')
+          setError('Please select a staple menu item for ingredient')
           return
         }
       }
@@ -352,10 +347,6 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
     }
 
     const validInstructions = instructions.filter((inst) => inst.trim())
-    if (validInstructions.length === 0) {
-      setError('At least one instruction is required')
-      return
-    }
 
     const recipeData = {
       ...formData,
@@ -416,7 +407,7 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
           setError('Validation error occurred')
         }
       } else {
-        setError(err.response?.data?.detail || 'Failed to save recipe')
+        setError(err.response?.data?.detail || 'Failed to save menu item')
       }
     } finally {
       setLoading(false)
@@ -425,7 +416,7 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{initialData ? 'Edit Recipe' : 'Create Recipe'}</DialogTitle>
+      <DialogTitle>{initialData ? 'Edit Menu Item' : 'Create Menu Item'}</DialogTitle>
       <DialogContent>
         {error && (
           <Alert severity="error" onClose={() => setError('')} sx={{ mb: 2 }}>
@@ -438,14 +429,14 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
           <Grid item xs={12}>
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Recipe Image
+                Menu Item Image
               </Typography>
               {imagePreview ? (
                 <Box position="relative" display="inline-block" width="100%">
                   <CardMedia
                     component="img"
                     image={imagePreview}
-                    alt="Recipe preview"
+                    alt="Menu item preview"
                     sx={{
                       width: '100%',
                       maxHeight: 200,
@@ -503,7 +494,7 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
           <Grid item xs={12}>
             <TextField
               fullWidth
-              label="Recipe Title"
+              label="Menu Item Title"
               name="title"
               value={formData.title}
               onChange={handleChange}
@@ -709,7 +700,7 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
 
           {formData.visibility === 'group' && (
             <Grid item xs={6}>
-              <FormControl fullWidth required>
+              <FormControl fullWidth>
                 <InputLabel>Select Group</InputLabel>
                 <Select
                   name="group_id"
@@ -741,7 +732,7 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
               </IconButton>
             </Box>
             <Typography variant="caption" color="text.secondary" display="block" mb={2}>
-              Add regular ingredients or select staple recipes (like sauces, doughs) as ingredients.
+              Add regular ingredients or select staple menu items (like sauces, doughs) as ingredients.
             </Typography>
             {ingredients.map((ingredient, index) => (
               <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
@@ -756,7 +747,7 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
                         label="Ingredient Type"
                       >
                         <MenuItem value="regular">Regular Ingredient</MenuItem>
-                        <MenuItem value="staple">Staple Recipe (Sauce, Dough, etc.)</MenuItem>
+                        <MenuItem value="staple">Staple Menu Item (Sauce, Dough, etc.)</MenuItem>
                       </Select>
                     </FormControl>
                   </Grid>
@@ -776,19 +767,19 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
                     </Grid>
                   )}
 
-                  {/* Staple Recipe Selector */}
+                  {/* Staple Menu Item Selector */}
                   {ingredient.ingredient_type === 'staple' && (
                     <Grid item xs={12}>
                       <FormControl fullWidth size="small">
-                        <InputLabel>Select Staple Recipe</InputLabel>
+                        <InputLabel>Select Staple Menu Item</InputLabel>
                         <Select
                           value={ingredient.ingredient_recipe_id || ''}
                           onChange={(e) => handleIngredientChange(index, 'ingredient_recipe_id', e.target.value)}
-                          label="Select Staple Recipe"
+                          label="Select Staple Menu Item"
                         >
                           {stapleRecipes.length === 0 && (
                             <MenuItem value="" disabled>
-                              No staple recipes available
+                              No staple menu items available
                             </MenuItem>
                           )}
                           {stapleRecipes.map((recipe) => (
@@ -800,7 +791,7 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
                       </FormControl>
                       {stapleRecipes.length === 0 && (
                         <Typography variant="caption" color="text.secondary" display="block" mt={1}>
-                          Create recipes with category &quot;Staple&quot; first (e.g., Pizza Dough, Tomato Sauce)
+                          Create menu items with category &quot;Staple&quot; first (e.g., Pizza Dough, Tomato Sauce)
                         </Typography>
                       )}
                     </Grid>

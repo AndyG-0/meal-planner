@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies import get_current_user, get_db
 from app.models import (
+    BlockedImageDomain,
     Calendar,
     FeatureToggle,
     Group,
@@ -22,6 +23,8 @@ from app.schemas import (
     AdminStatsResponse,
     AdminUserListResponse,
     AdminUserUpdate,
+    BlockedDomainCreate,
+    BlockedDomainResponse,
     FeatureToggleCreate,
     FeatureToggleResponse,
     FeatureToggleUpdate,
@@ -908,3 +911,75 @@ async def update_session_settings(
     await db.commit()
     await db.refresh(settings)
     return SessionSettingsResponse.model_validate(settings)
+
+
+# Blocked Image Domains Management
+
+
+@router.get("/blocked-domains", response_model=list[BlockedDomainResponse])
+async def get_blocked_domains(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _admin: Annotated[User, Depends(require_admin)],
+) -> list[BlockedDomainResponse]:
+    """Get all blocked image domains (admin only)."""
+    result = await db.execute(
+        select(BlockedImageDomain).order_by(BlockedImageDomain.domain)
+    )
+    domains = result.scalars().all()
+    return [BlockedDomainResponse.model_validate(d) for d in domains]
+
+
+@router.post("/blocked-domains", response_model=BlockedDomainResponse, status_code=status.HTTP_201_CREATED)
+async def add_blocked_domain(
+    domain_data: BlockedDomainCreate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    admin: Annotated[User, Depends(require_admin)],
+) -> BlockedDomainResponse:
+    """Add a domain to the block list (admin only)."""
+    # Normalize domain to lowercase and remove www prefix
+    normalized_domain = domain_data.domain.lower().replace("www.", "")
+
+    # Check if already exists
+    result = await db.execute(
+        select(BlockedImageDomain).where(BlockedImageDomain.domain == normalized_domain)
+    )
+    if result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Domain already blocked"
+        )
+
+    blocked_domain = BlockedImageDomain(
+        domain=normalized_domain,
+        reason=domain_data.reason,
+        created_by_id=admin.id
+    )
+    db.add(blocked_domain)
+    await db.commit()
+    await db.refresh(blocked_domain)
+
+    logger.info("Blocked image domain added: %s by admin user_id=%s", normalized_domain, admin.id)
+    return BlockedDomainResponse.model_validate(blocked_domain)
+
+
+@router.delete("/blocked-domains/{domain_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_blocked_domain(
+    domain_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _admin: Annotated[User, Depends(require_admin)],
+) -> None:
+    """Remove a domain from the block list (admin only)."""
+    result = await db.execute(
+        select(BlockedImageDomain).where(BlockedImageDomain.id == domain_id)
+    )
+    domain = result.scalar_one_or_none()
+
+    if not domain:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Blocked domain not found"
+        )
+
+    logger.info("Removing blocked image domain: %s", domain.domain)
+    await db.delete(domain)
+    await db.commit()

@@ -57,6 +57,11 @@ export const recipeService = {
     return response.data
   },
 
+  async quickAddMenuItem(title, category = null) {
+    const response = await api.post('/recipes/quick-add', { title, category })
+    return response.data
+  },
+
   async updateRecipe(id, data) {
     const response = await api.put(`/recipes/${id}`, data)
     return response.data

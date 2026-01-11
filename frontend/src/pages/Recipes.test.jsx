@@ -41,13 +41,13 @@ describe('Recipes', () => {
     recipeService.checkFeature.mockResolvedValue({ enabled: false });
   });
 
-  it('should render recipes page title', async () => {
+  it('should render menu items page title', async () => {
     render(
       <BrowserRouter>
         <Recipes />
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Recipes')).toBeTruthy();
+    expect(screen.getByText('Menu Items')).toBeTruthy();
   });
 });

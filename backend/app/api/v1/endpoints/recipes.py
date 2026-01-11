@@ -7,6 +7,7 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 
+import httpx
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +21,7 @@ from app.schemas import (
     PaginatedRecipeResponse,
     PaginationMetadata,
     RecipeCreate,
+    RecipeQuickAdd,
     RecipeRatingCreate,
     RecipeRatingResponse,
     RecipeResponse,
@@ -28,9 +30,10 @@ from app.schemas import (
     RecipeUpdate,
 )
 from app.services.nutrition import calculate_recipe_nutrition
+from app.services.openai_service import OpenAIService
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/recipes", tags=["Recipes"])
+router = APIRouter(prefix="/recipes", tags=["Menu Items"])
 
 
 def clean_ingredient_data(ingredients: list) -> list:
@@ -118,8 +121,17 @@ async def create_recipe(
 ) -> RecipeResponse:
     """Create a new recipe."""
     logger.info("Creating recipe: user_id=%s", current_user.id)
+
+    # If no image URL is provided, use the default placeholder image
+    recipe_dict = recipe_data.model_dump()
+    if not recipe_dict.get("image_url"):
+        image_url = settings.DEFAULT_RECIPE_IMAGE
+        if image_url and not image_url.startswith(("http://", "https://")):
+            image_url = f"{settings.BACKEND_URL}{image_url}"
+        recipe_dict["image_url"] = image_url
+
     recipe = Recipe(
-        **recipe_data.model_dump(),
+        **recipe_dict,
         owner_id=current_user.id,
     )
     db.add(recipe)
@@ -150,6 +162,89 @@ async def create_recipe(
         updated_at=recipe.updated_at,
         is_favorite=False,  # New recipes are not favorited
         tags=[],  # New recipes have no tags initially
+    )
+
+    return recipe_response
+
+
+@router.post("/quick-add", response_model=RecipeResponse, status_code=status.HTTP_201_CREATED)
+async def quick_add_menu_item(
+    quick_data: RecipeQuickAdd,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+) -> RecipeResponse:
+    """Quick-add a menu item with minimal information (title only required).
+
+    This endpoint allows users to quickly add menu items to their calendar
+    without requiring full recipe details. The menu item is created as private
+    by default and can be edited later to add more details.
+    """
+    logger.info("Quick-adding menu item: user_id=%s, title=%s", current_user.id, quick_data.title)
+
+    # Try to find an image for the menu item
+    image_url = None
+    try:
+        # Initialize OpenAI service to use image search
+        openai_service = OpenAIService(db)
+        await openai_service.initialize()
+
+        # Search for an image based on the title
+        logger.info(f"Searching for image for menu item: {quick_data.title}")
+        image_results = await openai_service.search_images(quick_data.title, max_results=1)
+
+        if image_results and len(image_results) > 0:
+            image_url = image_results[0].get("url")
+            logger.info(f"Found image for menu item: {image_url}")
+        else:
+            logger.info("No images found, using default")
+            image_url = settings.DEFAULT_RECIPE_IMAGE
+            if image_url and not image_url.startswith(("http://", "https://")):
+                image_url = f"{settings.BACKEND_URL}{image_url}"
+    except Exception as e:
+        logger.warning(f"Image search failed: {str(e)}, using default")
+        image_url = settings.DEFAULT_RECIPE_IMAGE
+        if image_url and not image_url.startswith(("http://", "https://")):
+            image_url = f"{settings.BACKEND_URL}{image_url}"
+
+    # Create recipe with minimal data - ingredients and instructions are optional
+    recipe = Recipe(
+        title=quick_data.title,
+        category=quick_data.category,
+        owner_id=current_user.id,
+        visibility="private",  # Always private for quick-add
+        ingredients=None,  # Optional
+        instructions=None,  # Optional
+        image_url=image_url,  # Add the found or default image
+    )
+    db.add(recipe)
+    await db.commit()
+    await db.refresh(recipe)
+
+    logger.info("Menu item quick-added successfully: recipe_id=%s", recipe.id)
+
+    # Create RecipeResponse
+    recipe_response = RecipeResponse(
+        id=recipe.id,
+        owner_id=recipe.owner_id,
+        title=recipe.title,
+        description=recipe.description,
+        ingredients=recipe.ingredients,
+        instructions=recipe.instructions,
+        serving_size=recipe.serving_size,
+        prep_time=recipe.prep_time,
+        cook_time=recipe.cook_time,
+        difficulty=recipe.difficulty,
+        category=recipe.category,
+        nutritional_info=recipe.nutritional_info,
+        visibility=recipe.visibility,
+        group_id=recipe.group_id,
+        is_shared=recipe.is_shared,
+        is_public=recipe.is_public,
+        image_url=recipe.image_url,
+        created_at=recipe.created_at,
+        updated_at=recipe.updated_at,
+        is_favorite=False,
+        tags=[],
     )
 
     return recipe_response
@@ -807,7 +902,7 @@ async def upload_recipe_image(
             detail="Recipe not found",
         )
 
-    if recipe.owner_id != current_user.id:
+    if recipe.owner_id != current_user.id and not current_user.is_admin:
         logger.warning("Unauthorized image upload attempt: recipe_id=%s, user_id=%s", recipe_id, current_user.id)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -1055,6 +1150,143 @@ async def export_recipes(
     )
 
 
+def get_default_image_url() -> None:
+    """Return None to use the default preview image for recipes without images.
+
+    The frontend will display the default placeholder when image_url is None.
+    """
+    return None
+
+
+async def get_or_create_seed_user(db: AsyncSession) -> User:
+    """Get or create the seed user for storing seed recipes.
+
+    Admins can edit these recipes because the permission check includes:
+    can_edit = recipe.owner_id == current_user.id or current_user.is_admin
+    """
+    # Check if seed user exists
+    result = await db.execute(select(User).where(User.username == "_seed_recipes"))
+    seed_user = result.scalars().first()
+
+    if seed_user:
+        return seed_user
+
+    from app.utils.auth import get_password_hash
+
+    seed_user = User(
+        username="_seed_recipes",
+        email="seed@recipes.local",
+        password_hash=get_password_hash("seed_password_123"),
+        is_admin=False,
+    )
+    db.add(seed_user)
+    await db.commit()
+    await db.refresh(seed_user)
+    logger.info("Created seed user for seed recipes")
+    return seed_user
+
+
+@router.post("/seed/import")
+async def import_seed_recipes(
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Import seed recipes from the default seed file.
+
+    Non-destructive: Only adds recipes that don't already exist with the same title
+    for the seed user. Does not modify existing recipes.
+    """
+    try:
+        # Get the seed recipes file from the backend data directory
+        seed_file = Path(__file__).parent.parent.parent.parent / "data" / "seed_recipes.json"
+        if not seed_file.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Seed recipes file not found on server",
+            )
+
+        with open(seed_file, encoding="utf-8") as f:
+            seed_data = json.load(f)
+
+        if not isinstance(seed_data, list):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid seed file format. Expected a JSON array of recipes.",
+            )
+
+        # Seed recipes will have a dedicated _seed_recipes user owner
+        # but admins can still edit them due to the permission check:
+        # can_edit = recipe.owner_id == current_user.id or current_user.is_admin
+        seed_user = await get_or_create_seed_user(db)
+
+        imported_count = 0
+        skipped_count = 0
+        errors = []
+
+        for idx, recipe_data in enumerate(seed_data):
+            try:
+                # Check if recipe already exists (by title and seed user)
+                result = await db.execute(
+                    select(Recipe).where(
+                        Recipe.title == recipe_data.get("title"),
+                        Recipe.owner_id == seed_user.id,
+                    )
+                )
+                existing = result.scalars().first()
+
+                if existing:
+                    skipped_count += 1
+                    continue
+
+                # Validate required fields
+                if "title" not in recipe_data:
+                    errors.append(f"Recipe {idx + 1}: Missing title")
+                    continue
+
+                recipe = Recipe(
+                    title=recipe_data.get("title"),
+                    description=recipe_data.get("description"),
+                    owner_id=seed_user.id,  # Owned by seed user, but admins can still edit
+                    ingredients=recipe_data.get("ingredients"),
+                    instructions=recipe_data.get("instructions"),
+                    serving_size=recipe_data.get("serving_size", 4),
+                    prep_time=recipe_data.get("prep_time"),
+                    cook_time=recipe_data.get("cook_time"),
+                    difficulty=recipe_data.get("difficulty"),
+                    category=recipe_data.get("category", "staple"),
+                    nutritional_info=recipe_data.get("nutritional_info"),
+                    visibility="public",
+                    image_url=None,  # Use default preview image
+                )
+                db.add(recipe)
+                imported_count += 1
+
+            except Exception as exc:  # noqa: BLE001, F841
+                errors.append(f"Recipe {idx + 1}: {str(exc)}")
+
+        await db.commit()
+
+        return {
+            "imported": imported_count,
+            "skipped": skipped_count,
+            "errors": errors if errors else None,
+            "message": f"Successfully imported {imported_count} seed recipes ({skipped_count} already existed)",
+        }
+
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid JSON in seed file",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Seed import failed: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Seed import failed: {str(e)}",
+        )
+
+
 @router.post("/import")
 async def import_recipes(
     file: UploadFile = File(...),
@@ -1122,4 +1354,43 @@ async def import_recipes(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Import failed: {str(e)}",
+        )
+
+
+@router.get("/download-image")
+async def download_image_proxy(
+    image_url: str = Query(..., description="URL of the image to download"),
+) -> Response:
+    """Proxy endpoint to download images from external URLs to avoid CORS issues.
+
+    This endpoint fetches an image from an external URL and returns it to the client,
+    bypassing CORS restrictions that would prevent direct client-side fetching.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(image_url, follow_redirects=True)
+            response.raise_for_status()
+
+            # Get content type from response or default to jpeg
+            content_type = response.headers.get("content-type", "image/jpeg")
+
+            return Response(
+                content=response.content,
+                media_type=content_type,
+                headers={
+                    "Access-Control-Allow-Origin": "*",
+                    "Cache-Control": "public, max-age=3600",
+                },
+            )
+    except httpx.HTTPError as e:
+        logger.error("Failed to download image from %s: %s", image_url, str(e))
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to download image: {str(e)}",
+        )
+    except Exception as e:
+        logger.error("Unexpected error downloading image: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to download image",
         )

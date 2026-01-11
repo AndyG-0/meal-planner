@@ -69,6 +69,9 @@ export default function AdminDashboard() {
   const [featureToggles, setFeatureToggles] = useState([])
   const [openaiSettings, setOpenaiSettings] = useState(null)
   const [sessionSettings, setSessionSettings] = useState(null)
+  const [blockedDomains, setBlockedDomains] = useState([])
+  const [newDomain, setNewDomain] = useState('')
+  const [newDomainReason, setNewDomainReason] = useState('')
   const [availableModels, setAvailableModels] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -112,7 +115,7 @@ export default function AdminDashboard() {
       if (recipeDifficulty) recipeParams.difficulty = recipeDifficulty
       if (recipeVisibility) recipeParams.visibility = recipeVisibility
       
-      const [statsRes, usersRes, recipesRes, calendarsRes, groupsRes, togglesRes, openaiRes, sessionRes] = await Promise.all([
+      const [statsRes, usersRes, recipesRes, calendarsRes, groupsRes, togglesRes, openaiRes, sessionRes, blockedDomainsRes] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/admin/users'),
         api.get('/admin/recipes', { params: recipeParams }),
@@ -121,6 +124,7 @@ export default function AdminDashboard() {
         api.get('/admin/feature-toggles'),
         api.get('/admin/openai-settings'),
         api.get('/admin/session-settings'),
+        api.get('/admin/blocked-domains'),
       ])
       setStats(statsRes.data)
       setUsers(usersRes.data)
@@ -130,6 +134,7 @@ export default function AdminDashboard() {
       setFeatureToggles(togglesRes.data)
       setOpenaiSettings(openaiRes.data)
       setSessionSettings(sessionRes.data)
+      setBlockedDomains(blockedDomainsRes.data)
       
       // Set pagination state for recipes
       setRecipesSkip(limit)
@@ -423,6 +428,36 @@ export default function AdminDashboard() {
     }
   }
 
+  // Blocked Domains Management
+  const handleAddBlockedDomain = async () => {
+    if (!newDomain.trim()) {
+      setError('Domain cannot be empty')
+      return
+    }
+    try {
+      await api.post('/admin/blocked-domains', {
+        domain: newDomain.trim(),
+        reason: newDomainReason.trim() || 'Manually blocked'
+      })
+      setNewDomain('')
+      setNewDomainReason('')
+      await loadData()
+      setSuccess('Domain blocked successfully')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to block domain')
+    }
+  }
+
+  const handleRemoveBlockedDomain = async (domainId) => {
+    try {
+      await api.delete(`/admin/blocked-domains/${domainId}`)
+      await loadData()
+      setSuccess('Domain unblocked successfully')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to unblock domain')
+    }
+  }
+
   if (loading) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
@@ -523,7 +558,7 @@ export default function AdminDashboard() {
       <Paper sx={{ width: '100%' }}>
         <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)}>
           <Tab label={`Users (${users.length})`} icon={<PersonIcon />} iconPosition="start" />
-          <Tab label={`Recipes (${recipes.length})`} icon={<RestaurantIcon />} iconPosition="start" />
+          <Tab label={`Menu Items (${recipes.length})`} icon={<RestaurantIcon />} iconPosition="start" />
           <Tab label={`Calendars (${calendars.length})`} icon={<CalendarIcon />} iconPosition="start" />
           <Tab label={`Groups (${groups.length})`} icon={<GroupIcon />} iconPosition="start" />
           <Tab label="Settings" icon={<SettingsIcon />} iconPosition="start" />
@@ -592,7 +627,7 @@ export default function AdminDashboard() {
                 <TextField
                   fullWidth
                   size="small"
-                  placeholder="Search recipes..."
+                  placeholder="Search menu items..."
                   value={recipeSearch}
                   onChange={(e) => setRecipeSearch(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleRecipeFilterChange()}
@@ -1046,6 +1081,97 @@ export default function AdminDashboard() {
                       </Box>
                     </Box>
                   )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Blocked Image Domains Section */}
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <SettingsIcon sx={{ mr: 1 }} />
+                    <Typography variant="h6">Image Download Block List</Typography>
+                  </Box>
+                  <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                    Domains that are blocked from being used as image sources. Images from these domains cannot be downloaded.
+                  </Typography>
+                  
+                  {/* Add New Domain Form */}
+                  <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                    <TextField
+                      label="Domain"
+                      value={newDomain}
+                      onChange={(e) => setNewDomain(e.target.value)}
+                      placeholder="example.com"
+                      sx={{ flexGrow: 1 }}
+                      size="small"
+                    />
+                    <TextField
+                      label="Reason (optional)"
+                      value={newDomainReason}
+                      onChange={(e) => setNewDomainReason(e.target.value)}
+                      placeholder="Why is this domain blocked?"
+                      sx={{ flexGrow: 2 }}
+                      size="small"
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={handleAddBlockedDomain}
+                      sx={{ whiteSpace: 'nowrap' }}
+                    >
+                      Block Domain
+                    </Button>
+                  </Box>
+
+                  {/* Blocked Domains Table */}
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Domain</TableCell>
+                          <TableCell>Reason</TableCell>
+                          <TableCell>Blocked At</TableCell>
+                          <TableCell align="right">Actions</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {blockedDomains.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={4} align="center">
+                              <Typography variant="body2" color="textSecondary">
+                                No domains blocked yet
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          blockedDomains.map((domain) => (
+                            <TableRow key={domain.id}>
+                              <TableCell>
+                                <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                  {domain.domain}
+                                </Typography>
+                              </TableCell>
+                              <TableCell>{domain.reason || 'No reason provided'}</TableCell>
+                              <TableCell>
+                                {new Date(domain.created_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell align="right">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleRemoveBlockedDomain(domain.id)}
+                                  color="error"
+                                  title="Unblock this domain"
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 </CardContent>
               </Card>
             </Grid>

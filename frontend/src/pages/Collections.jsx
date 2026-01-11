@@ -280,7 +280,7 @@ export default function Collections() {
                   </Typography>
                 )}
                 <Chip
-                  label={`${collection.items?.length || 0} recipes`}
+                  label={`${collection.items?.length || 0} menu items`}
                   size="small"
                   color="primary"
                   variant="outlined"
@@ -461,7 +461,7 @@ export default function Collections() {
         maxWidth="lg"
         fullWidth
       >
-        <DialogTitle>Add Recipe to Collection</DialogTitle>
+        <DialogTitle>Add Menu Item to Collection</DialogTitle>
         <DialogContent>
           {/* Search and Filters */}
           <Box sx={{ mb: 3, mt: 1 }}>
@@ -469,7 +469,7 @@ export default function Collections() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  placeholder="Search recipes..."
+                  placeholder="Search menu items..."
                   value={recipeSearchTerm}
                   onChange={(e) => setRecipeSearchTerm(e.target.value)}
                   InputProps={{
@@ -545,12 +545,34 @@ export default function Collections() {
                           handleAddRecipeSubmit(recipe.id);
                         }}
                       >
-                        <CardMedia
-                          component="img"
-                          height="140"
-                          image={recipe.image_url || 'https://via.placeholder.com/400x200?text=No+Image'}
-                          alt={recipe.title}
-                        />
+                        {recipe.image_url ? (
+                          <CardMedia
+                            component="img"
+                            height="140"
+                            image={recipe.image_url}
+                            alt={recipe.title}
+                            onError={(e) => {
+                              e.target.style.display = 'none'
+                              e.target.nextElementSibling.style.display = 'flex'
+                            }}
+                          />
+                        ) : null}
+                        <Box
+                          sx={{
+                            height: 140,
+                            bgcolor: 'grey.200',
+                            display: recipe.image_url ? 'none' : 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexDirection: 'column',
+                            gap: 1,
+                          }}
+                        >
+                          <Restaurant sx={{ fontSize: 40, color: 'grey.400' }} />
+                          <Typography variant="caption" color="text.secondary">
+                            No Image
+                          </Typography>
+                        </Box>
                         <CardContent>
                           <Typography variant="h6" component="div" noWrap>
                             {recipe.title}

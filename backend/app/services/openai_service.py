@@ -346,11 +346,6 @@ Create recipes based solely on their requests without dietary restrictions.
                         },
                         "required": [
                             "name",
-                            "ingredients",
-                            "instructions",
-                            "prep_time",
-                            "cook_time",
-                            "servings",
                         ],
                     },
                 },
@@ -582,36 +577,37 @@ Create recipes based solely on their requests without dietary restrictions.
         logger.info(f"Creating recipe: {recipe_data.get('name', 'Unknown')}")
         logger.debug(f"Recipe data: {json.dumps(recipe_data, indent=2)}")
 
-        # Validate and clean ingredients
+        # Validate and clean ingredients (if provided)
         ingredients = recipe_data.get("ingredients", [])
         cleaned_ingredients = []
 
-        for idx, ing in enumerate(ingredients):
-            if not isinstance(ing, dict):
-                raise ValueError(
-                    f"Ingredient {idx + 1} must be an object with name, quantity, and unit"
-                )
+        if ingredients:  # Only process if ingredients are provided
+            for idx, ing in enumerate(ingredients):
+                if not isinstance(ing, dict):
+                    raise ValueError(
+                        f"Ingredient {idx + 1} must be an object with name, quantity, and unit"
+                    )
 
-            name = ing.get("name", "").strip()
-            quantity = ing.get("quantity")
-            unit = ing.get("unit", "").strip()
+                name = ing.get("name", "").strip()
+                quantity = ing.get("quantity")
+                unit = ing.get("unit", "").strip()
 
-            # Validate ingredient has all required fields
-            if not name:
-                raise ValueError(f"Ingredient {idx + 1} must have a name")
-            if quantity is None or not isinstance(quantity, (int, float)):
-                raise ValueError(f"Ingredient '{name}' must have a numeric quantity")
-            if not unit:
-                raise ValueError(f"Ingredient '{name}' must have a unit")
+                # Validate ingredient has all required fields
+                if not name:
+                    raise ValueError(f"Ingredient {idx + 1} must have a name")
+                if quantity is None or not isinstance(quantity, (int, float)):
+                    raise ValueError(f"Ingredient '{name}' must have a numeric quantity")
+                if not unit:
+                    raise ValueError(f"Ingredient '{name}' must have a unit")
 
-            # Check if name contains measurements (common AI error)
-            if name and (name[0].isdigit() or name.startswith("(")):
-                raise ValueError(
-                    f"Ingredient '{name}' appears to contain measurements in the name field. "
-                    "Measurements should only be in quantity and unit fields."
-                )
+                # Check if name contains measurements (common AI error)
+                if name and (name[0].isdigit() or name.startswith("(")):
+                    raise ValueError(
+                        f"Ingredient '{name}' appears to contain measurements in the name field. "
+                        "Measurements should only be in quantity and unit fields."
+                    )
 
-            cleaned_ingredients.append({"name": name, "quantity": float(quantity), "unit": unit})
+                cleaned_ingredients.append({"name": name, "quantity": float(quantity), "unit": unit})
 
         # Use image_url from recipe_data if provided, otherwise search for one
         image_url = recipe_data.get("image_url")
@@ -641,11 +637,11 @@ Create recipes based solely on their requests without dietary restrictions.
             owner_id=user.id,
             title=recipe_data["name"],
             description=recipe_data.get("description", ""),
-            ingredients=cleaned_ingredients,
-            instructions=recipe_data["instructions"],
-            prep_time=recipe_data["prep_time"],
-            cook_time=recipe_data["cook_time"],
-            serving_size=recipe_data["servings"],
+            ingredients=cleaned_ingredients if cleaned_ingredients else None,  # Optional
+            instructions=recipe_data.get("instructions"),  # Optional
+            prep_time=recipe_data.get("prep_time"),  # Optional
+            cook_time=recipe_data.get("cook_time"),  # Optional
+            serving_size=recipe_data.get("servings", 4),  # Default to 4
             difficulty=recipe_data.get("difficulty"),
             category=recipe_data.get("category"),  # Add category field
             visibility="private",  # Default to private
@@ -1033,11 +1029,22 @@ Create recipes based solely on their requests without dietary restrictions.
         Returns:
             List of image results with url, thumbnail, title, and source
         """
+        from urllib.parse import urlparse
+
+        from app.models import BlockedImageDomain
+
         # Get SEARXNG URL from settings or use default
         searxng_url = getattr(self.settings, "searxng_url", None) or "http://localhost:8085"
         logger.info(
             f"Searching images with query: '{query}', max_results: {max_results}, searxng_url: {searxng_url}"
         )
+
+        # Fetch blocked domains from database
+        blocked_result = await self.db.execute(
+            select(BlockedImageDomain.domain)
+        )
+        blocked_domains = {domain for (domain,) in blocked_result.fetchall()}
+        logger.debug(f"Filtering out {len(blocked_domains)} blocked domains from image search")
 
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
@@ -1055,17 +1062,44 @@ Create recipes based solely on their requests without dietary restrictions.
                 logger.debug(f"Image search returned {len(data.get('results', []))} results")
 
                 results = []
-                for result in data.get("results", [])[:max_results]:
+                filtered_count = 0
+                for result in data.get("results", []):
+                    img_url = result.get("img_src", "")
+                    if not img_url:
+                        continue
+
+                    # Extract domain from image URL
+                    try:
+                        parsed_url = urlparse(img_url)
+                        domain = parsed_url.netloc.lower().replace("www.", "")
+
+                        # Skip if domain is blocked
+                        if domain in blocked_domains:
+                            filtered_count += 1
+                            logger.debug(f"Filtering out image from blocked domain: {domain}")
+                            continue
+                    except Exception:
+                        # If we can't parse the URL, skip it
+                        logger.warning(f"Could not parse image URL: {img_url}")
+                        continue
+
                     results.append(
                         {
-                            "url": result.get("img_src", ""),
-                            "thumbnail": result.get("thumbnail_src", result.get("img_src", "")),
+                            "url": img_url,
+                            "thumbnail": result.get("thumbnail_src", img_url),
                             "title": result.get("title", ""),
                             "source": result.get("url", ""),
                             "width": result.get("img_width"),
                             "height": result.get("img_height"),
                         }
                     )
+
+                    # Stop once we have enough results
+                    if len(results) >= max_results:
+                        break
+
+                if filtered_count > 0:
+                    logger.info(f"Filtered out {filtered_count} images from blocked domains")
 
                 logger.info(f"Returning {len(results)} image results")
                 return results

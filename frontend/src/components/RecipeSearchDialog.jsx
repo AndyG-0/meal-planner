@@ -28,17 +28,22 @@ import {
   Search as SearchIcon,
   ExpandMore as ExpandMoreIcon,
   FilterList as FilterIcon,
+  Add as AddIcon,
 } from '@mui/icons-material'
 import { recipeService } from '../services'
 
 const DIFFICULTIES = ['easy', 'medium', 'hard']
 const CATEGORIES = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'staple', 'frozen']
 
-export default function RecipeSearchDialog({ open, onClose, onSelect, title = "Search Recipes" }) {
+export default function RecipeSearchDialog({ open, onClose, onSelect, title = "Search Menu Items" }) {
   const [searchTerm, setSearchTerm] = useState('')
   const [recipes, setRecipes] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedRecipe, setSelectedRecipe] = useState(null)
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
+  const [quickAddTitle, setQuickAddTitle] = useState('')
+  const [quickAddCategory, setQuickAddCategory] = useState('')
+  const [quickAddLoading, setQuickAddLoading] = useState(false)
   
   // Filters
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -134,7 +139,38 @@ export default function RecipeSearchDialog({ open, onClose, onSelect, title = "S
     setSelectedRecipe(null)
     setSearchTerm('')
     setRecipes([])
+    setQuickAddOpen(false)
+    setQuickAddTitle('')
+    setQuickAddCategory('')
     onClose()
+  }
+
+  const handleQuickAdd = async () => {
+    if (!quickAddTitle.trim()) return
+
+    setQuickAddLoading(true)
+    try {
+      const newMenuItem = await recipeService.quickAddMenuItem(
+        quickAddTitle.trim(),
+        quickAddCategory || null
+      )
+      
+      // Call onSelect with the newly created menu item
+      if (onSelect) {
+        onSelect(newMenuItem)
+      }
+      
+      // Reset and close
+      setQuickAddTitle('')
+      setQuickAddCategory('')
+      setQuickAddOpen(false)
+      handleClose()
+    } catch (err) {
+      console.error('Failed to quick-add menu item:', err)
+      alert('Failed to add menu item. Please try again.')
+    } finally {
+      setQuickAddLoading(false)
+    }
   }
 
   const hasActiveFilters = selectedCategory || selectedDifficulty || selectedTags.length > 0 || maxPrepTime || maxCookTime
@@ -147,7 +183,7 @@ export default function RecipeSearchDialog({ open, onClose, onSelect, title = "S
           {/* Search Input */}
           <TextField
             fullWidth
-            placeholder="Search by recipe name..."
+            placeholder="Search by menu item name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => {
@@ -160,6 +196,77 @@ export default function RecipeSearchDialog({ open, onClose, onSelect, title = "S
             }}
             sx={{ mb: 2 }}
           />
+
+          {/* Quick Add Section */}
+          <Box sx={{ mb: 2, p: 2, bgcolor: 'background.paper', border: '1px dashed', borderColor: 'divider', borderRadius: 1 }}>
+            <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AddIcon fontSize="small" />
+              Quick Add Menu Item
+            </Typography>
+            {!quickAddOpen ? (
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={() => setQuickAddOpen(true)}
+                startIcon={<AddIcon />}
+              >
+                Add New Item
+              </Button>
+            ) : (
+              <Box sx={{ display: 'flex', gap: 1, flexDirection: 'column' }}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Menu item title (e.g., 'Leftover Pizza')"
+                  value={quickAddTitle}
+                  onChange={(e) => setQuickAddTitle(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && quickAddTitle.trim()) {
+                      handleQuickAdd()
+                    }
+                  }}
+                  autoFocus
+                />
+                <FormControl fullWidth size="small">
+                  <InputLabel>Category (Optional)</InputLabel>
+                  <Select
+                    value={quickAddCategory}
+                    label="Category (Optional)"
+                    onChange={(e) => setQuickAddCategory(e.target.value)}
+                  >
+                    <MenuItem value="">
+                      <em>None</em>
+                    </MenuItem>
+                    {CATEGORIES.map((cat) => (
+                      <MenuItem key={cat} value={cat}>
+                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setQuickAddOpen(false)
+                      setQuickAddTitle('')
+                      setQuickAddCategory('')
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={handleQuickAdd}
+                    disabled={!quickAddTitle.trim() || quickAddLoading}
+                  >
+                    {quickAddLoading ? 'Adding...' : 'Add & Select'}
+                  </Button>
+                </Box>
+              </Box>
+            )}
+          </Box>
 
           {/* Advanced Filters */}
           <Accordion>

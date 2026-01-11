@@ -207,11 +207,11 @@ export default function UserSettings() {
                   }
                 />
               }
-              label="Use dietary preferences when creating AI recipes"
+              label="Use dietary preferences when creating AI menu items"
               sx={{ mb: 2 }}
             />
             <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2, ml: 4 }}>
-              When enabled, the AI will automatically apply your dietary preferences to all recipe suggestions unless you explicitly request otherwise.
+              When enabled, the AI will automatically apply your dietary preferences to all menu item suggestions unless you explicitly request otherwise.
             </Typography>
             
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>

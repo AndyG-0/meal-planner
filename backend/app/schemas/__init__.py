@@ -5,6 +5,11 @@ from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.schemas.blocked_domain import (  # noqa: F401
+    BlockedDomainCreate,
+    BlockedDomainResponse,
+)
+
 
 # User Schemas
 class UserBase(BaseModel):
@@ -158,12 +163,12 @@ class IngredientSchema(BaseModel):
 
 
 class RecipeBase(BaseModel):
-    """Base recipe schema."""
+    """Base recipe schema - now supports menu items with minimal fields."""
 
-    title: str = Field(..., min_length=1, max_length=255)
+    title: str = Field(..., min_length=1, max_length=255)  # Only required field
     description: str | None = None
-    ingredients: list[IngredientSchema]
-    instructions: list[str]
+    ingredients: list[IngredientSchema] | None = None  # Optional for quick menu items
+    instructions: list[str] | None = None  # Optional for quick menu items
     serving_size: int = 4
     prep_time: int | None = None
     cook_time: int | None = None
@@ -222,6 +227,15 @@ class RecipeCreate(RecipeBase):
     """Recipe creation schema."""
 
     pass
+
+
+class RecipeQuickAdd(BaseModel):
+    """Quick-add menu item schema - minimal fields for rapid entry."""
+
+    title: str = Field(..., min_length=1, max_length=255)
+    category: str | None = Field(
+        None, pattern="^(breakfast|lunch|dinner|snack|dessert|staple|frozen)$"
+    )
 
 
 class RecipeUpdate(BaseModel):

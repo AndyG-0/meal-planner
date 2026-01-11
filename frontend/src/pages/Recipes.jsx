@@ -27,6 +27,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Snackbar,
 } from '@mui/material'
 import {
   Add as AddIcon,
@@ -47,6 +48,7 @@ import { recipeService } from '../services'
 import { useRecipeStore } from '../store/recipeStore'
 import RecipeForm from '../components/RecipeForm'
 import RecipeDetailDialog from '../components/RecipeDetailDialog'
+import ImageSearchDialog from '../components/ImageSearchDialog'
 import AIRecipeChat from '../components/AIRecipeChat'
 
 const DIFFICULTIES = ['easy', 'medium', 'hard']
@@ -74,9 +76,12 @@ export default function Recipes() {
   const [openAIChat, setOpenAIChat] = useState(false)
   const [aiEnabled, setAiEnabled] = useState(false)
   const [editingRecipe, setEditingRecipe] = useState(null)
-  const [activeTab, setActiveTab] = useState(0) // 0 = All Recipes, 1 = Favorites, 2 = Staples
+  const [activeTab, setActiveTab] = useState(0) // 0 = All Menu Items, 1 = Favorites, 2 = Staples
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [importFile, setImportFile] = useState(null)
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' })
+  const [imageValidationError, setImageValidationError] = useState(null)
+  const [showImageSearchForError, setShowImageSearchForError] = useState(false)
   
   // Advanced filters
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -145,7 +150,7 @@ export default function Recipes() {
       
       // Add category filter based on active tab
       if (activeTab === 2) {
-        // Staple recipes tab
+        // Staple items tab
         params.category = 'staple'
       } else if (activeTab === 1) {
         // Favorites tab - handled separately below
@@ -167,7 +172,7 @@ export default function Recipes() {
       
       setRecipes(data)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load recipes')
+        setError(err.response?.data?.detail || 'Failed to load menu items')
     } finally {
       setLoading(false)
     }
@@ -223,7 +228,7 @@ export default function Recipes() {
       setRecipes([...recipes, ...newRecipes])
       setCurrentPage(nextPage)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load more recipes')
+      setError(err.response?.data?.detail || 'Failed to load more menu items')
     } finally {
       setLoadingMore(false)
     }
@@ -277,15 +282,50 @@ export default function Recipes() {
       
       // Check if imageFile is a URL object (from image search) or a File object (from upload)
       if (imageFile.url) {
-        // Download image from URL and convert to blob
+        // First validate that the image can be downloaded
         try {
-          const response = await fetch(imageFile.url)
+          const validateUrl = `/image-proxy?image_url=${encodeURIComponent(imageFile.url)}&validate_only=true`
+          const validateResponse = await fetch(validateUrl)
+          if (!validateResponse.ok) {
+            const errorData = await validateResponse.json().catch(() => ({}))
+            throw new Error(errorData.detail || 'Image validation failed')
+          }
+        } catch (err) {
+          console.warn('Image validation failed:', err)
+          setImageValidationError({
+            recipeName: recipeData.title,
+            errorMessage: err.message.includes('blocked') 
+              ? 'This image source is blocked.'
+              : 'Unable to download image from that URL.',
+            recipeId: newRecipe.id,
+            isEdit: false
+          })
+          setShowImageSearchForError(true)
+          // Close the form since recipe was created
+          setOpenForm(false)
+          setEditingRecipe(null)
+          return
+        }
+
+        // Download image from URL via backend proxy
+        try {
+          const proxyUrl = `/image-proxy?image_url=${encodeURIComponent(imageFile.url)}`
+          const response = await fetch(proxyUrl)
+          if (!response.ok) {
+            throw new Error('Failed to download image via proxy')
+          }
           const blob = await response.blob()
-          // Create a file from the blob
-          const file = new File([blob], 'recipe-image.jpg', { type: blob.type })
+          // Create a file from the blob with proper content type
+          const contentType = blob.type && blob.type.startsWith('image/') ? blob.type : 'image/jpeg'
+          const file = new File([blob], 'recipe-image.jpg', { type: contentType })
           formData.append('file', file)
         } catch (err) {
-          console.warn('Failed to download image from URL:', err)
+          console.warn('Failed to download image from URL via proxy:', err)
+          setSnackbar({
+            open: true,
+            message: 'Unable to download image from that URL. The recipe was saved without an image. Try uploading an image file instead.',
+            severity: 'warning'
+          })
           // Continue without image
         }
       } else {
@@ -343,15 +383,50 @@ export default function Recipes() {
       
       // Check if imageFile is a URL object (from image search) or a File object (from upload)
       if (imageFile.url) {
-        // Download image from URL and convert to blob
+        // First validate that the image can be downloaded
         try {
-          const response = await fetch(imageFile.url)
+          const validateUrl = `/image-proxy?image_url=${encodeURIComponent(imageFile.url)}&validate_only=true`
+          const validateResponse = await fetch(validateUrl)
+          if (!validateResponse.ok) {
+            const errorData = await validateResponse.json().catch(() => ({}))
+            throw new Error(errorData.detail || 'Image validation failed')
+          }
+        } catch (err) {
+          console.warn('Image validation failed:', err)
+          setImageValidationError({
+            recipeName: recipeData.title,
+            errorMessage: err.message.includes('blocked') 
+              ? 'This image source is blocked.'
+              : 'Unable to download image from that URL.',
+            recipeId: editingRecipe.id,
+            isEdit: true
+          })
+          setShowImageSearchForError(true)
+          // Close the form since recipe was updated
+          setOpenForm(false)
+          setEditingRecipe(null)
+          return
+        }
+
+        // Download image from URL via backend proxy
+        try {
+          const proxyUrl = `/image-proxy?image_url=${encodeURIComponent(imageFile.url)}`
+          const response = await fetch(proxyUrl)
+          if (!response.ok) {
+            throw new Error('Failed to download image via proxy')
+          }
           const blob = await response.blob()
-          // Create a file from the blob
-          const file = new File([blob], 'recipe-image.jpg', { type: blob.type })
+          // Create a file from the blob with proper content type
+          const contentType = blob.type && blob.type.startsWith('image/') ? blob.type : 'image/jpeg'
+          const file = new File([blob], 'recipe-image.jpg', { type: contentType })
           formData.append('file', file)
         } catch (err) {
-          console.warn('Failed to download image from URL:', err)
+          console.warn('Failed to download image from URL via proxy:', err)
+          setSnackbar({
+            open: true,
+            message: 'Unable to download image from that URL. The recipe was saved without an image. Try uploading an image file instead.',
+            severity: 'warning'
+          })
           // Continue without image
         }
       } else {
@@ -447,7 +522,64 @@ export default function Recipes() {
       alert(`Successfully imported ${result.imported} recipes`)
       loadRecipes()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to import recipes')
+      setError(err.response?.data?.detail || 'Failed to import menu items')
+    }
+  }
+
+  const handleAlternativeImageSelected = async (imageUrl) => {
+    if (!imageValidationError) return
+
+    const { recipeId } = imageValidationError
+    
+    try {
+      // Validate the new image first
+      const validateUrl = `/image-proxy?image_url=${encodeURIComponent(imageUrl)}&validate_only=true`
+      const validateResponse = await fetch(validateUrl)
+      if (!validateResponse.ok) {
+        const errorData = await validateResponse.json().catch(() => ({}))
+        throw new Error(errorData.detail || 'Image validation failed')
+      }
+
+      // Download and upload the image
+      const proxyUrl = `/image-proxy?image_url=${encodeURIComponent(imageUrl)}`
+      const response = await fetch(proxyUrl)
+      if (!response.ok) {
+        throw new Error('Failed to download image via proxy')
+      }
+      const blob = await response.blob()
+      const contentType = blob.type && blob.type.startsWith('image/') ? blob.type : 'image/jpeg'
+      const file = new File([blob], 'recipe-image.jpg', { type: contentType })
+      
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      await recipeService.uploadImage(recipeId, formData)
+      
+      // Refresh the recipe
+      const updatedRecipe = await recipeService.getRecipe(recipeId)
+      if (imageValidationError.isEdit) {
+        updateRecipe(recipeId, updatedRecipe)
+      } else {
+        addRecipe(updatedRecipe)
+      }
+      
+      setSnackbar({
+        open: true,
+        message: 'Image updated successfully!',
+        severity: 'success'
+      })
+      setShowImageSearchForError(false)
+      setImageValidationError(null)
+    } catch (err) {
+      console.error('Failed to update image:', err)
+      setSnackbar({
+        open: true,
+        message: err.message.includes('blocked')
+          ? 'This image source is also blocked. Please try another image.'
+          : 'Failed to download this image. Please try another image.',
+        severity: 'error'
+      })
+      // Keep the dialog open so user can try again
     }
   }
 
@@ -463,7 +595,7 @@ export default function Recipes() {
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h4" gutterBottom>
-          Recipes
+          Menu Items
         </Typography>
         <Box display="flex" gap={2}>
           <Button
@@ -500,7 +632,7 @@ export default function Recipes() {
               setOpenForm(true)
             }}
           >
-            Add Recipe
+            Add Menu Item
           </Button>
         </Box>
       </Box>
@@ -516,7 +648,7 @@ export default function Recipes() {
         <Box display="flex" gap={2} mb={2}>
           <TextField
             fullWidth
-            placeholder="Search recipes..."
+            placeholder="Search menu items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -671,15 +803,15 @@ export default function Recipes() {
       </Box>
 
       <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} sx={{ mb: 2 }}>
-        <Tab label="All Recipes" />
+        <Tab label="All Menu Items" />
         <Tab label="Favorites" icon={<Favorite sx={{ ml: 1 }} />} iconPosition="end" />
-        <Tab label="Staple Recipes" />
+        <Tab label="Staple Items" />
       </Tabs>
 
       {activeTab === 2 && (
         <Alert severity="info" sx={{ mb: 3 }}>
-          Staple recipes are base ingredients like sauces, doughs, or stocks that can be used as ingredients in other recipes. 
-          Create a recipe with category &quot;Staple&quot; to see it here.
+          Staple items are base ingredients like sauces, doughs, or stocks that can be used as ingredients in other menu items. 
+          Create a menu item with category &quot;Staple&quot; to see it here.
         </Alert>
       )}
 
@@ -691,14 +823,39 @@ export default function Recipes() {
           return (
             <Grid item xs={12} sm={6} md={4} key={recipe.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                <CardMedia
-                  component="img"
-                  height="200"
-                  image={recipe.image_url || 'https://via.placeholder.com/400x200?text=No+Image'}
-                  alt={recipe.title}
-                  sx={{ cursor: 'pointer' }}
+                {recipe.image_url ? (
+                  <CardMedia
+                    component="img"
+                    height="200"
+                    image={recipe.image_url}
+                    alt={recipe.title}
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => handleViewDetails(recipe)}
+                    onError={(e) => {
+                      // If image fails to load, replace with placeholder Box
+                      e.target.style.display = 'none'
+                      e.target.nextElementSibling.style.display = 'flex'
+                    }}
+                  />
+                ) : null}
+                <Box
+                  sx={{
+                    height: 200,
+                    bgcolor: 'grey.200',
+                    display: recipe.image_url ? 'none' : 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    flexDirection: 'column',
+                    gap: 1,
+                  }}
                   onClick={() => handleViewDetails(recipe)}
-                />
+                >
+                  <Restaurant sx={{ fontSize: 60, color: 'grey.400' }} />
+                  <Typography variant="body2" color="text.secondary">
+                    No Image
+                  </Typography>
+                </Box>
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography
                     gutterBottom
@@ -819,10 +976,10 @@ export default function Recipes() {
       />
 
       <Dialog open={importDialogOpen} onClose={() => setImportDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Import Recipes</DialogTitle>
+        <DialogTitle>Import Menu Items</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Select a JSON file containing recipes to import.
+            Select a JSON file containing menu items to import.
           </Typography>
           <input
             type="file"
@@ -837,6 +994,34 @@ export default function Recipes() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Image Search Dialog for when validation fails */}
+      <ImageSearchDialog
+        open={showImageSearchForError}
+        onClose={() => {
+          setShowImageSearchForError(false)
+          setImageValidationError(null)
+        }}
+        onSelectImage={handleAlternativeImageSelected}
+        initialQuery={imageValidationError?.recipeName || ''}
+        errorMessage={imageValidationError?.errorMessage}
+        recipeName={imageValidationError?.recipeName}
+      />
     </Box>
   )
 }

@@ -51,7 +51,7 @@ export default function Layout() {
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'Recipes', icon: <Restaurant />, path: '/recipes' },
+    { text: 'Menu Items', icon: <Restaurant />, path: '/recipes' },
     { text: 'Collections', icon: <FolderIcon />, path: '/collections' },
     { text: 'Calendar', icon: <CalendarMonth />, path: '/calendar' },
     { text: 'Calendar Management', icon: <CalendarTodayIcon />, path: '/calendar-management' },
