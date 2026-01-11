@@ -79,5 +79,11 @@ class Settings(BaseSettings):
         """Get the application version dynamically."""
         return get_app_version()
 
+    def __getattr__(self, name: str) -> str:  # type: ignore[no-untyped-def]
+        """Handle backward compatibility for APP_VERSION attribute."""
+        if name == "APP_VERSION":
+            return self.app_version
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
 
 settings = Settings()
