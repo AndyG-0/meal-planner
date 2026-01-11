@@ -1,6 +1,12 @@
 """Application configuration."""
 
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Get the backend directory (parent of app directory)
+BACKEND_DIR = Path(__file__).parent.parent
+ENV_FILE = BACKEND_DIR / ".env"
 
 
 class Settings(BaseSettings):
@@ -55,7 +61,7 @@ class Settings(BaseSettings):
     DEFAULT_RECIPE_IMAGE: str = "/uploads/recipes/missing-image.jpg"
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(ENV_FILE),
         env_file_encoding="utf-8",
         case_sensitive=True,
     )

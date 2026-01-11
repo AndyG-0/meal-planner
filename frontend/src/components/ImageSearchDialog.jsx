@@ -19,7 +19,14 @@ import {
 import { Search as SearchIcon, Close as CloseIcon } from '@mui/icons-material'
 import api from '../services/api'
 
-export default function ImageSearchDialog({ open, onClose, onSelectImage, initialQuery = '' }) {
+export default function ImageSearchDialog({ 
+  open, 
+  onClose, 
+  onSelectImage, 
+  initialQuery = '',
+  errorMessage = null,
+  recipeName = null 
+}) {
   const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
@@ -116,6 +123,22 @@ export default function ImageSearchDialog({ open, onClose, onSelectImage, initia
       </DialogTitle>
       
       <DialogContent>
+        {/* Show validation error message if present */}
+        {errorMessage && recipeName && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+              Image Download Failed
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 1 }}>
+              {errorMessage}
+            </Typography>
+            <Typography variant="body2">
+              The menu item <strong>&quot;{recipeName}&quot;</strong> was saved without an image. 
+              Please search for an alternative image below.
+            </Typography>
+          </Alert>
+        )}
+
         <Box sx={{ mb: 3, display: 'flex', gap: 1 }}>
           <TextField
             fullWidth

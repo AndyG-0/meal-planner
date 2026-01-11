@@ -17,6 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from app.database import Base
+from app.models.blocked_domain import BlockedImageDomain  # noqa: F401
 
 
 class User(Base):
@@ -50,16 +51,16 @@ class User(Base):
 
 
 class Recipe(Base):
-    """Recipe model."""
+    """Recipe model - now supports menu items with minimal required fields."""
 
     __tablename__ = "recipes"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False)
+    title = Column(String(255), nullable=False)  # Only required field
     description = Column(Text)
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    ingredients = Column(JSON, nullable=False)  # List of {name, quantity, unit}
-    instructions = Column(JSON, nullable=False)  # List of steps
+    ingredients = Column(JSON, nullable=True)  # Optional - List of {name, quantity, unit}
+    instructions = Column(JSON, nullable=True)  # Optional - List of steps
     image_url = Column(String(500))
     serving_size = Column(Integer, default=4)
     prep_time = Column(Integer)  # minutes

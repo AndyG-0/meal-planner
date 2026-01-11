@@ -79,6 +79,14 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8180',
         changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://localhost:8180',
+        changeOrigin: true,
+      },
+      '/image-proxy': {
+        target: 'http://localhost:8180',
+        changeOrigin: true,
       }
     }
   }

@@ -7,10 +7,10 @@ set -e  # Exit on first error
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-echo "=================================================="
-echo "Running all CI checks locally..."
-echo "=================================================="
-echo ""
+echo -e "=================================================="
+echo -e "Running all CI checks locally..."
+echo -e "=================================================="
+echo -e ""
 
 # Colors for output
 RED='\033[0;31m'
@@ -26,51 +26,51 @@ run_check() {
     local command=$2
     local working_dir=${3:-.}
     
-    echo "${YELLOW}▶ Running: $name${NC}"
+    echo -e "${YELLOW}▶ Running: $name${NC}"
     
     if (cd "$PROJECT_ROOT/$working_dir" && eval "$command"); then
-        echo "${GREEN}✓ $name passed${NC}"
-        echo ""
+        echo -e "${GREEN}✓ $name passed${NC}"
+        echo -e ""
     else
-        echo "${RED}✗ $name failed${NC}"
-        echo ""
+        echo -e "${RED}✗ $name failed${NC}"
+        echo -e ""
         failed_checks+=("$name")
     fi
 }
 
 # Backend checks
-echo "${YELLOW}=== BACKEND CHECKS ===${NC}"
-echo ""
+echo -e "${YELLOW}=== BACKEND CHECKS ===${NC}"
+echo -e ""
 
 run_check "Backend: Ruff linting" "uv run ruff check app/ tests/" "backend"
 
 # Frontend checks
-echo "${YELLOW}=== FRONTEND CHECKS ===${NC}"
-echo ""
+echo -e "${YELLOW}=== FRONTEND CHECKS ===${NC}"
+echo -e ""
 
 run_check "Frontend: Install dependencies" "npm install" "frontend"
 run_check "Frontend: Linting" "npm run lint" "frontend"
 
 # Docker build checks
-echo "${YELLOW}=== DOCKER BUILD CHECKS ===${NC}"
-echo ""
+echo -e "${YELLOW}=== DOCKER BUILD CHECKS ===${NC}"
+echo -e ""
 
 # Skipping Docker builds for faster local checks - uncomment to test
 # run_check "Docker: Build backend image" "docker build -f backend/Dockerfile backend/ -t mealplanner-backend:latest" "."
 # run_check "Docker: Build frontend image" "docker build -f frontend/Dockerfile frontend/ -t mealplanner-frontend:latest" "."
 
 # Summary
-echo ""
-echo "=================================================="
+echo -e ""
+echo -e "=================================================="
 if [ ${#failed_checks[@]} -eq 0 ]; then
-    echo "${GREEN}✓ All checks passed!${NC}"
-    echo "=================================================="
+    echo -e "${GREEN}✓ All checks passed!${NC}"
+    echo -e "=================================================="
     exit 0
 else
-    echo "${RED}✗ The following checks failed:${NC}"
+    echo -e "${RED}✗ The following checks failed:${NC}"
     for check in "${failed_checks[@]}"; do
-        echo "  - $check"
+        echo -e "  - $check"
     done
-    echo "=================================================="
+    echo -e "=================================================="
     exit 1
 fi

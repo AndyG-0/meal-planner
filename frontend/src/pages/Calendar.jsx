@@ -719,7 +719,7 @@ export default function Calendar() {
                 }
               />
             }
-            label="Avoid duplicate recipes"
+            label="Avoid duplicate menu items"
           />
         </DialogContent>
         <DialogActions>
