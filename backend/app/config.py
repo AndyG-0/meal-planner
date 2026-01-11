@@ -59,28 +59,19 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    SMTP_TLS: bool = True
-    FROM_EMAIL: str = "noreply@example.com"
+    SMTP_FROM: str = ""
 
-    # OpenAI
+    # OpenAI (optional)
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "gpt-4"
-    OPENAI_MAX_TOKENS: int = 2000
-    OPENAI_TEMPERATURE: float = 0.7
+    OPENAI_MODEL: str = "gpt-3.5-turbo"
 
-    # Session settings
-    SESSION_TIMEOUT_MINUTES: int = 60
-    MAX_CONCURRENT_SESSIONS: int = 5
-
-    # Image processing
-    IMAGE_BLOCKLIST_ENABLED: bool = True
-    DEFAULT_RECIPE_IMAGE: str | None = None
+    # Recipe Images
+    DEFAULT_RECIPE_IMAGE: str = "/uploads/recipes/missing-image.jpg"
 
     model_config = SettingsConfigDict(
-        env_file=ENV_FILE,
+        env_file=str(ENV_FILE),
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore",  # Ignore extra fields from .env file
     )
 
     @property

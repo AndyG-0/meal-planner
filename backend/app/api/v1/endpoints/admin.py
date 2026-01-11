@@ -1,6 +1,5 @@
 """Admin API endpoints."""
 
-import importlib.metadata
 import logging
 from typing import Annotated
 
@@ -9,6 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies import get_current_user, get_db
+from app.config import get_app_version
 from app.models import (
     BlockedImageDomain,
     Calendar,
@@ -96,10 +96,7 @@ async def get_admin_stats(
     total_private_recipes = total_private_result.scalar() or 0
 
     # Get app version
-    try:
-        version = importlib.metadata.version("meal-planner-backend")
-    except importlib.metadata.PackageNotFoundError:
-        version = "unknown"
+    version = get_app_version()
 
     return AdminStatsResponse(
         total_users=total_users,

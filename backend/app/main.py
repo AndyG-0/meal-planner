@@ -8,15 +8,6 @@ from fastapi import FastAPI, HTTPException, Query, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select
 
-# Get version dynamically before any other imports
-try:
-    import importlib.metadata
-    app_version = importlib.metadata.version("meal-planner-backend")
-    print(f"DEBUG: App version detected as: {app_version}")
-except importlib.metadata.PackageNotFoundError:
-    app_version = "unknown"
-    print("DEBUG: App version not found, using 'unknown'")
-
 from app.api.v1.endpoints import (
     admin,
     ai,
@@ -28,10 +19,13 @@ from app.api.v1.endpoints import (
     groups,
     recipes,
 )
-from app.config import settings
+from app.config import get_app_version, settings
 from app.logging_config import setup_logging
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.models import BlockedImageDomain
+
+# Get version dynamically
+app_version = get_app_version()
 
 # Set up logging
 logger = setup_logging(debug=settings.DEBUG)
@@ -295,6 +289,6 @@ async def root() -> dict[str, str]:
     """Root endpoint."""
     return {
         "message": "Meal Planner API",
-        "version": settings.app_version,
+        "version": app_version,
         "docs": "/docs",
     }

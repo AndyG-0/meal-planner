@@ -57,6 +57,10 @@ async def test_get_admin_stats_and_feature_toggle_crud(
     data = response.json()
     assert data["total_users"] >= 1
     assert data["total_recipes"] >= 1
+    # Test version field is present and has expected value
+    assert "version" in data
+    assert isinstance(data["version"], str)
+    assert len(data["version"]) > 0  # Version should not be empty
 
     # Feature toggle CRUD
     toggle = {
