@@ -33,7 +33,7 @@ if [ -f "backend/pyproject.toml" ]; then
   # Update uv.lock to reflect the new version
   if command -v uv &> /dev/null; then
     echo "Updating backend/uv.lock..."
-    cd backend && uv lock && cd ..
+    (cd backend && uv lock)
     echo "Updated backend/uv.lock"
     UV_LOCK_UPDATED=1
   else
