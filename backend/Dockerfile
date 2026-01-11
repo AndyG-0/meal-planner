@@ -18,6 +18,7 @@ COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
 COPY data ./data
+COPY seed_docker.py ./
 
 # Install dependencies
 RUN uv pip install --system -e .
