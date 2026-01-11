@@ -25,4 +25,4 @@ async def test_import_json_with_errors(client, test_user, test_token):
     # The import will accept records that have a title and ingredients; the bad entry with missing title should be reported
     assert body["imported"] == 2
     assert isinstance(body["errors"], list)
-    assert any("Missing required fields" in (str(e)) for e in body["errors"])
+    assert any("Missing required field 'title'" in str(e) for e in body["errors"])

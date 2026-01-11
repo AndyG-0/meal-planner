@@ -150,5 +150,6 @@ async def test_export_and_import_recipes_success_and_errors(client, db_session, 
     resp3 = await client.post("/api/v1/recipes/import", files=files2, headers={"Authorization": f"Bearer {token}"})
     assert resp3.status_code == 200
     data = resp3.json()
-    assert data["imported"] == 0
+    assert data["imported"] == 1
     assert data["errors"] is not None
+    assert any("Missing required field 'title'" in str(e) for e in data["errors"])

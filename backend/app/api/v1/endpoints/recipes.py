@@ -1310,8 +1310,8 @@ async def import_recipes(
         for idx, recipe_data in enumerate(recipes_data):
             try:
                 # Validate required fields
-                if "title" not in recipe_data or "ingredients" not in recipe_data:
-                    errors.append(f"Recipe {idx + 1}: Missing required fields")
+                if "title" not in recipe_data:
+                    errors.append(f"Recipe {idx + 1}: Missing required field 'title'")
                     continue
 
                 recipe = Recipe(

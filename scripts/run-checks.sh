@@ -43,6 +43,8 @@ echo -e "${YELLOW}=== BACKEND CHECKS ===${NC}"
 echo -e ""
 
 run_check "Backend: Ruff linting" "uv run ruff check app/ tests/" "backend"
+# run_check "Backend: MyPy type checking" "uv run mypy app/ --ignore-missing-imports" "backend"  # TODO: Fix MyPy errors
+run_check "Backend: Pytest tests" "uv run pytest tests/" "backend"
 
 # Frontend checks
 echo -e "${YELLOW}=== FRONTEND CHECKS ===${NC}"

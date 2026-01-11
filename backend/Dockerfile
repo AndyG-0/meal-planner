@@ -17,6 +17,8 @@ COPY pyproject.toml ./
 COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
+COPY data ./data
+COPY seed_docker.py ./
 
 # Install dependencies
 RUN uv pip install --system -e .
@@ -25,4 +27,4 @@ RUN uv pip install --system -e .
 EXPOSE 8000
 
 # Run migrations and start server
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && python seed_docker.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"]

@@ -112,4 +112,4 @@ async def test_import_with_item_error_reports(client, db_session, test_user, tes
     assert resp.status_code == 200
     data = resp.json()
     assert data["errors"] is not None
-    assert any("Missing required fields" in e for e in data["errors"])
+    assert any("Missing required field 'title'" in e for e in data["errors"])
