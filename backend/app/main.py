@@ -19,19 +19,23 @@ from app.api.v1.endpoints import (
     groups,
     recipes,
 )
-from app.config import settings
+from app.config import get_app_version, settings
 from app.logging_config import setup_logging
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.models import BlockedImageDomain
 
+# Get version dynamically
+app_version = get_app_version()
+
 # Set up logging
 logger = setup_logging(debug=settings.DEBUG)
-logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
+
+logger.info(f"Starting {settings.APP_NAME} v{app_version}")
 
 # Create FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
-    version=settings.APP_VERSION,
+    version=app_version,
     description="API for meal planning and recipe management",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -285,6 +289,6 @@ async def root() -> dict[str, str]:
     """Root endpoint."""
     return {
         "message": "Meal Planner API",
-        "version": settings.APP_VERSION,
+        "version": app_version,
         "docs": "/docs",
     }

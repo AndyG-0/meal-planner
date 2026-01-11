@@ -8,6 +8,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies import get_current_user, get_db
+from app.config import get_app_version
 from app.models import (
     BlockedImageDomain,
     Calendar,
@@ -94,6 +95,9 @@ async def get_admin_stats(
     )
     total_private_recipes = total_private_result.scalar() or 0
 
+    # Get app version
+    version = get_app_version()
+
     return AdminStatsResponse(
         total_users=total_users,
         total_recipes=total_recipes,
@@ -102,6 +106,7 @@ async def get_admin_stats(
         total_public_recipes=total_public_recipes,
         total_group_recipes=total_group_recipes,
         total_private_recipes=total_private_recipes,
+        version=version,
     )
 
 

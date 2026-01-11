@@ -1226,7 +1226,7 @@ wheels = [
 
 [[package]]
 name = "meal-planner-backend"
-version = "0.1.0"
+version = "1.0.13"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },

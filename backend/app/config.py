@@ -1,5 +1,6 @@
 """Application configuration."""
 
+import importlib.metadata
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,12 +10,19 @@ BACKEND_DIR = Path(__file__).parent.parent
 ENV_FILE = BACKEND_DIR / ".env"
 
 
+def get_app_version() -> str:
+    """Get the application version from package metadata."""
+    try:
+        return importlib.metadata.version("meal-planner-backend")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
+
+
 class Settings(BaseSettings):
     """Application settings."""
 
     # Application
     APP_NAME: str = "Meal Planner API"
-    APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
 
     # API
@@ -65,6 +73,17 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=True,
     )
+
+    @property
+    def app_version(self) -> str:
+        """Get the application version dynamically."""
+        return get_app_version()
+
+    def __getattr__(self, name: str) -> str:  # type: ignore[no-untyped-def]
+        """Handle backward compatibility for APP_VERSION attribute."""
+        if name == "APP_VERSION":
+            return self.app_version
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
 
 settings = Settings()

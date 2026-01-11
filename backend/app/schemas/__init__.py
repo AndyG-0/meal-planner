@@ -582,6 +582,7 @@ class AdminStatsResponse(BaseModel):
     total_public_recipes: int
     total_group_recipes: int
     total_private_recipes: int
+    version: str
 
 
 class AdminUserListResponse(BaseModel):

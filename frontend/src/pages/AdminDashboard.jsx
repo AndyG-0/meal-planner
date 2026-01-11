@@ -45,6 +45,7 @@ import {
   Settings as SettingsIcon,
   SmartToy as AIIcon,
   CheckCircle as CheckCircleIcon,
+  Info as InfoIcon,
 } from '@mui/icons-material'
 import api from '../services/api'
 import { useAuthStore } from '../store/authStore'
@@ -548,6 +549,25 @@ export default function AdminDashboard() {
                   <Typography variant="h4">{stats?.total_groups || 0}</Typography>
                 </div>
                 <GroupIcon sx={{ fontSize: 40, color: 'warning.main' }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Version Info */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <div>
+                  <Typography color="textSecondary" gutterBottom>
+                    App Version
+                  </Typography>
+                  <Typography variant="h4">{stats?.version || 'Loading...'}</Typography>
+                </div>
+                <InfoIcon sx={{ fontSize: 40, color: 'secondary.main' }} />
               </Box>
             </CardContent>
           </Card>
