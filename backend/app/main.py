@@ -172,7 +172,8 @@ async def download_image_proxy_test(
             content_type = response.headers.get("content-type", "image/jpeg")
 
             # Verify it's actually an image
-            if not content_type.startswith("image/"):
+            logger.info("Image URL %s returned content-type: %s", image_url, content_type)
+            if not (content_type.startswith("image/") or content_type == "binary/octet-stream"):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="URL does not point to an image"
@@ -234,6 +235,8 @@ async def download_image_proxy_test(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Failed to download image: {str(e)}",
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error("Unexpected error downloading image: %s", str(e))
         raise HTTPException(
