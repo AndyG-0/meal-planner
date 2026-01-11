@@ -17,6 +17,7 @@ fi
 echo "Updating version to $VERSION..."
 
 # Update backend/pyproject.toml
+UV_LOCK_UPDATED=0
 if [ -f "backend/pyproject.toml" ]; then
   # Use a more portable sed approach with explicit backup extension
   if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -34,6 +35,7 @@ if [ -f "backend/pyproject.toml" ]; then
     echo "Updating backend/uv.lock..."
     cd backend && uv lock && cd ..
     echo "Updated backend/uv.lock"
+    UV_LOCK_UPDATED=1
   else
     echo "Warning: uv not found, skipping uv.lock update"
   fi
@@ -58,7 +60,11 @@ else
 fi
 
 # Stage version changes
-git add backend/pyproject.toml backend/uv.lock frontend/package.json
+if [ "$UV_LOCK_UPDATED" -eq 1 ]; then
+  git add backend/pyproject.toml backend/uv.lock frontend/package.json
+else
+  git add backend/pyproject.toml frontend/package.json
+fi
 
 # Commit the version changes
 git commit -m "Bump version to $VERSION"
