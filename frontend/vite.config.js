@@ -77,15 +77,15 @@ export default defineConfig({
     port: 3080,
     proxy: {
       '/api': {
-        target: 'http://localhost:8180',
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8180',
         changeOrigin: true,
       },
       '/uploads': {
-        target: 'http://localhost:8180',
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8180',
         changeOrigin: true,
       },
       '/image-proxy': {
-        target: 'http://localhost:8180',
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8180',
         changeOrigin: true,
       }
     }

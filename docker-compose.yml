@@ -68,6 +68,7 @@ services:
       - "3080:3080"
     environment:
       VITE_API_URL: http://localhost:8180/api/v1
+      VITE_BACKEND_URL: http://backend:8180
     depends_on:
       - backend
     volumes:
