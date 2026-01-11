@@ -8,11 +8,11 @@ from pathlib import Path
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from app.database import AsyncSessionLocal
 from app.api.v1.endpoints.recipes import import_seed_recipes
+from app.database import AsyncSessionLocal
 
 
-async def main():
+async def main() -> None:
     """Run the seed import."""
     try:
         async with AsyncSessionLocal() as db:
