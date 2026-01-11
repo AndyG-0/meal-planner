@@ -1,5 +1,6 @@
 """Admin API endpoints."""
 
+import importlib.metadata
 import logging
 from typing import Annotated
 
@@ -94,6 +95,12 @@ async def get_admin_stats(
     )
     total_private_recipes = total_private_result.scalar() or 0
 
+    # Get app version
+    try:
+        version = importlib.metadata.version("meal-planner-backend")
+    except importlib.metadata.PackageNotFoundError:
+        version = "unknown"
+
     return AdminStatsResponse(
         total_users=total_users,
         total_recipes=total_recipes,
@@ -102,6 +109,7 @@ async def get_admin_stats(
         total_public_recipes=total_public_recipes,
         total_group_recipes=total_group_recipes,
         total_private_recipes=total_private_recipes,
+        version=version,
     )
 
 

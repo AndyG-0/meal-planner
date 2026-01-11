@@ -1,5 +1,6 @@
 """Application configuration."""
 
+import importlib.metadata
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,12 +10,19 @@ BACKEND_DIR = Path(__file__).parent.parent
 ENV_FILE = BACKEND_DIR / ".env"
 
 
+def get_app_version() -> str:
+    """Get the application version from package metadata."""
+    try:
+        return importlib.metadata.version("meal-planner-backend")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
+
+
 class Settings(BaseSettings):
     """Application settings."""
 
     # Application
     APP_NAME: str = "Meal Planner API"
-    APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
 
     # API
@@ -51,20 +59,34 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    SMTP_FROM: str = ""
+    SMTP_TLS: bool = True
+    FROM_EMAIL: str = "noreply@example.com"
 
-    # OpenAI (optional)
+    # OpenAI
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "gpt-3.5-turbo"
+    OPENAI_MODEL: str = "gpt-4"
+    OPENAI_MAX_TOKENS: int = 2000
+    OPENAI_TEMPERATURE: float = 0.7
 
-    # Recipe Images
-    DEFAULT_RECIPE_IMAGE: str = "/uploads/recipes/missing-image.jpg"
+    # Session settings
+    SESSION_TIMEOUT_MINUTES: int = 60
+    MAX_CONCURRENT_SESSIONS: int = 5
+
+    # Image processing
+    IMAGE_BLOCKLIST_ENABLED: bool = True
+    DEFAULT_RECIPE_IMAGE: str | None = None
 
     model_config = SettingsConfigDict(
-        env_file=str(ENV_FILE),
+        env_file=ENV_FILE,
         env_file_encoding="utf-8",
         case_sensitive=True,
+        extra="ignore",  # Ignore extra fields from .env file
     )
+
+    @property
+    def app_version(self) -> str:
+        """Get the application version dynamically."""
+        return get_app_version()
 
 
 settings = Settings()
