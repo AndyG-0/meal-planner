@@ -345,12 +345,13 @@ export default function GroceryList() {
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
       <Box>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Typography variant="h4">Grocery Lists</Typography>
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={1}>
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>Grocery Lists</Typography>
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setOpenCreate(true)}
+            size="small"
           >
             Create List
           </Button>
@@ -362,22 +363,24 @@ export default function GroceryList() {
           </Alert>
         )}
 
-        <Box display="flex" gap={2}>
+        <Box display="flex" gap={2} flexDirection={{ xs: 'column', md: 'row' }}>
           {/* List selector sidebar */}
-          <Paper sx={{ width: 300, p: 2 }}>
+          <Paper sx={{ width: { xs: '100%', md: 300 }, p: 2, maxHeight: { xs: 'auto', md: 500 }, overflowY: { xs: 'visible', md: 'auto' } }}>
             <Typography variant="h6" gutterBottom>
               Your Lists
             </Typography>
-            <List>
+            <List disablePadding sx={{ display: { xs: 'flex', sm: 'block' }, flexDirection: 'row', gap: { xs: 1, sm: 0 }, flexWrap: 'wrap' }}>
               {lists.map((list) => (
                 <ListItem
                   key={list.id}
                   button
                   selected={selectedList?.id === list.id}
                   onClick={() => setSelectedList(list)}
+                  sx={{ flex: { xs: '1 1 calc(50% - 0.5rem)', sm: 'auto' } }}
                   secondaryAction={
                     <IconButton
                       edge="end"
+                      size="small"
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDeleteList(list.id)
@@ -387,11 +390,12 @@ export default function GroceryList() {
                     </IconButton>
                   }
                 >
-                  <ListItemIcon>
+                  <ListItemIcon sx={{ minWidth: 36 }}>
                     <ShoppingCart />
                   </ListItemIcon>
                   <ListItemText
                     primary={list.name}
+                    primaryTypographyProps={{ sx: { fontSize: { xs: '0.875rem', sm: '1rem' } } }}
                     secondary={
                       list.date_from && list.date_to
                         ? `${format(new Date(list.date_from), 'MMM d')} - ${format(
@@ -400,6 +404,7 @@ export default function GroceryList() {
                           )}`
                         : null
                     }
+                    secondaryTypographyProps={{ sx: { fontSize: { xs: '0.75rem', sm: '0.875rem' } } }}
                   />
                 </ListItem>
               ))}
@@ -407,19 +412,30 @@ export default function GroceryList() {
           </Paper>
 
           {/* Main content */}
-          <Paper sx={{ flex: 1, p: 3 }}>
+          <Paper sx={{ flex: 1, p: { xs: 2, sm: 3 } }}>
             {selectedList ? (
               <>
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
                   <Typography variant="h5">
                     {selectedList.name}
                   </Typography>
-                  <Box display="flex" gap={1}>
+                  <Box
+                    display="flex"
+                    gap={1}
+                    flexWrap="wrap"
+                    sx={{
+                      flexDirection: { xs: 'column', sm: 'row' },
+                    }}
+                  >
                     <Button
                       variant="outlined"
                       size="small"
                       startIcon={<PrintIcon />}
                       onClick={handlePrint}
+                      sx={{
+                        flex: { xs: 1, sm: 'auto' },
+                        minWidth: { xs: '100%', sm: 'auto' },
+                      }}
                     >
                       Print
                     </Button>
@@ -428,6 +444,10 @@ export default function GroceryList() {
                       size="small"
                       startIcon={<DownloadIcon />}
                       onClick={handleExportTXT}
+                      sx={{
+                        flex: { xs: 1, sm: 'auto' },
+                        minWidth: { xs: '100%', sm: 'auto' },
+                      }}
                     >
                       Export TXT
                     </Button>
@@ -436,6 +456,10 @@ export default function GroceryList() {
                       size="small"
                       startIcon={<DownloadIcon />}
                       onClick={handleExportCSV}
+                      sx={{
+                        flex: { xs: 1, sm: 'auto' },
+                        minWidth: { xs: '100%', sm: 'auto' },
+                      }}
                     >
                       Export CSV
                     </Button>
@@ -444,6 +468,10 @@ export default function GroceryList() {
                       size="small"
                       startIcon={<AddIcon />}
                       onClick={handleAddItem}
+                      sx={{
+                        flex: { xs: 1, sm: 'auto' },
+                        minWidth: { xs: '100%', sm: 'auto' },
+                      }}
                     >
                       Add Item
                     </Button>
@@ -458,15 +486,29 @@ export default function GroceryList() {
                 
                 {/* Multi-select Actions */}
                 {selectedList.items.length > 0 && (
-                  <Box display="flex" gap={2} alignItems="center" mb={2} mt={2}>
+                  <Box
+                    display="flex"
+                    gap={2}
+                    alignItems={{ xs: 'stretch', sm: 'center' }}
+                    mb={2}
+                    mt={2}
+                    sx={{
+                      flexDirection: { xs: 'column', sm: 'row' },
+                      flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                    }}
+                  >
                     <Button
                       size="small"
                       variant="outlined"
                       onClick={handleSelectAll}
+                      sx={{
+                        flex: { xs: 1, sm: 'auto' },
+                        minWidth: { xs: '100%', sm: 'auto' },
+                      }}
                     >
                       {selectedItems.length === selectedList.items.length ? 'Deselect All' : 'Select All'}
                     </Button>
-                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                    <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: 1, sm: 'auto' } }}>
                       <InputLabel>Action</InputLabel>
                       <Select
                         value={actionValue}
@@ -484,6 +526,10 @@ export default function GroceryList() {
                       size="small"
                       onClick={handleAction}
                       disabled={selectedItems.length === 0 || !actionValue}
+                      sx={{
+                        flex: { xs: 1, sm: 'auto' },
+                        minWidth: { xs: '100%', sm: 'auto' },
+                      }}
                     >
                       Apply to {selectedItems.length} item(s)
                     </Button>

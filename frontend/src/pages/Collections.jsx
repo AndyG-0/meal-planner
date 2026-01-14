@@ -126,7 +126,7 @@ export default function Collections() {
       setCollectionRecipes(response);
     } catch (err) {
       console.error('Error loading collection recipes:', err);
-      setError(err.response?.data?.detail || 'Failed to load recipes');
+      setError(err.response?.data?.detail || 'Failed to load menu items');
     }
   };
 
@@ -214,7 +214,7 @@ export default function Collections() {
       await loadCollections(); // Reload to update item count
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to add recipe to collection');
+      setError(err.response?.data?.detail || 'Failed to add menu item to collection');
       console.error('Error adding recipe:', err);
     } finally {
       setLoading(false);
@@ -222,7 +222,7 @@ export default function Collections() {
   };
 
   const handleRemoveRecipe = async (recipeId) => {
-    if (!window.confirm('Remove this recipe from the collection?')) return;
+    if (!window.confirm('Remove this menu item from the collection?')) return;
 
     try {
       setLoading(true);
@@ -234,7 +234,7 @@ export default function Collections() {
       await loadCollections(); // Reload to update item count
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to remove recipe');
+      setError(err.response?.data?.detail || 'Failed to remove menu item');
       console.error('Error removing recipe:', err);
     } finally {
       setLoading(false);
@@ -318,7 +318,7 @@ export default function Collections() {
             <Card>
               <CardContent>
                 <Typography variant="body1" color="text.secondary" align="center">
-                  No collections yet. Create your first collection to organize your recipes!
+                  No collections yet. Create your first collection to organize your menu items!
                 </Typography>
               </CardContent>
             </Card>
@@ -388,7 +388,7 @@ export default function Collections() {
               
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">
-                  Recipes ({collectionRecipes.length})
+                  Menu Items ({collectionRecipes.length})
                 </Typography>
                 <Button
                   variant="outlined"
@@ -396,14 +396,14 @@ export default function Collections() {
                   onClick={handleAddRecipe}
                   size="small"
                 >
-                  Add Recipe
+                  Add Menu Item
                 </Button>
               </Box>
 
               <List>
                 {collectionRecipes.length === 0 ? (
                   <Typography variant="body2" color="text.secondary">
-                    No recipes in this collection yet. Click &quot;Add Recipe&quot; to get started!
+                    No menu items in this collection yet. Click &quot;Add Menu Item&quot; to get started!
                   </Typography>
                 ) : (
                   collectionRecipes.map((recipe) => (
@@ -523,8 +523,8 @@ export default function Collections() {
             {filteredRecipes.length === 0 ? (
               <Typography variant="body2" color="text.secondary" align="center" sx={{ py: 4 }}>
                 {allRecipes.length === 0
-                  ? 'No recipes available'
-                  : 'No recipes match your filters'}
+                  ? 'No menu items available'
+                  : 'No menu items match your filters'}
               </Typography>
             ) : (
               <Grid container spacing={2}>

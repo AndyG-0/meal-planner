@@ -815,7 +815,7 @@ export default function RecipeForm({ open, onClose, onSubmit, initialData }) {
                       fullWidth
                       size="small"
                       label="Unit"
-                      placeholder={ingredient.ingredient_type === 'staple' ? 'e.g., batch, recipe' : 'e.g., cups, tbsp'}
+                      placeholder={ingredient.ingredient_type === 'staple' ? 'e.g., batch, serving' : 'e.g., cups, tbsp'}
                       value={ingredient.unit || ''}
                       onChange={(e) => handleIngredientChange(index, 'unit', e.target.value)}
                     />

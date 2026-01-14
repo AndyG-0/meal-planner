@@ -366,8 +366,6 @@ export default function Calendar() {
     )
   }
 
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i))
-
   if (!selectedCalendar) {
     return (
       <Box>
@@ -399,15 +397,15 @@ export default function Calendar() {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box display="flex" alignItems="center" gap={2}>
-          <Typography variant="h4">{selectedCalendar?.name || 'Meal Calendar'}</Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2} mb={3} flexWrap="wrap">
+        <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+          <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>{selectedCalendar?.name || 'Meal Calendar'}</Typography>
           <Button
             variant="outlined"
             size="small"
             onClick={handleOpenCalendarSelector}
           >
-            Switch Calendar
+            Switch
           </Button>
           <Button
             variant="outlined"
@@ -415,8 +413,10 @@ export default function Calendar() {
             startIcon={<AddIcon />}
             onClick={() => setOpenCreateCalendar(true)}
           >
-            New Calendar
+            New
           </Button>
+        </Box>
+        <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
           <Button
             variant="contained"
             size="small"
@@ -437,18 +437,19 @@ export default function Calendar() {
             Copy
           </Button>
         </Box>
-        <Box display="flex" gap={2} alignItems="center">
-          <IconButton onClick={handlePreviousWeek}>
-            <ChevronLeft />
-          </IconButton>
-          <Typography variant="h6">
-            {format(currentWeekStart, 'MMM d')} -{' '}
-            {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
-          </Typography>
-          <IconButton onClick={handleNextWeek}>
-            <ChevronRight />
-          </IconButton>
-        </Box>
+      </Box>
+
+      <Box display="flex" gap={1} alignItems="center" justifyContent="center" mb={3}>
+        <IconButton onClick={handlePreviousWeek} size="small">
+          <ChevronLeft />
+        </IconButton>
+        <Typography variant="subtitle1" sx={{ minWidth: '200px', textAlign: 'center', fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+          {format(currentWeekStart, 'MMM d')} -{' '}
+          {format(addDays(currentWeekStart, 6), 'MMM d, yyyy')}
+        </Typography>
+        <IconButton onClick={handleNextWeek} size="small">
+          <ChevronRight />
+        </IconButton>
       </Box>
 
       {error && (
@@ -462,122 +463,204 @@ export default function Calendar() {
           <CircularProgress />
         </Box>
       ) : (
-        <Box sx={{ overflowX: 'auto' }}>
-          <Grid container spacing={1} sx={{ minWidth: 1000 }}>
-            <Grid item xs={1.5}>
-              <Paper sx={{ p: 1, minHeight: 100 }}>
-                <Typography variant="subtitle2" fontWeight="bold">
-                  Meal Type
-                </Typography>
-              </Paper>
-            </Grid>
-            {weekDays.map((day) => (
-              <Grid item xs={1.5} key={day.toISOString()}>
-                <Paper sx={{ p: 1, textAlign: 'center', minHeight: 100 }}>
-                  <Typography variant="subtitle2" fontWeight="bold">
-                    {format(day, 'EEE')}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {format(day, 'MMM d')}
+        <Box sx={{ mb: 3 }}>
+          {/* Mobile View - Card per Day */}
+          <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+            {Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i)).map((day) => (
+              <Card key={day.toISOString()} sx={{ mb: 2 }}>
+                <CardContent>
+                  <Box sx={{ mb: 2, pb: 1, borderBottom: '1px solid #eee' }}>
+                    <Typography variant="h6" fontWeight="bold">
+                      {format(day, 'EEEE')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {format(day, 'MMMM d, yyyy')}
+                    </Typography>
+                  </Box>
+
+                  {MEAL_TYPES.map((mealType) => {
+                    const dayMeals = getMealsForDateAndType(day, mealType)
+                    return (
+                      <Box key={mealType} sx={{ mb: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="subtitle2" fontWeight="bold" textTransform="capitalize">
+                            {mealType}
+                          </Typography>
+                          {selectedCalendar?.can_edit && (
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              startIcon={<AddIcon />}
+                              onClick={() => handleAddMealClick(day, mealType)}
+                              sx={{ minWidth: 'auto', px: 1 }}
+                            >
+                              Add
+                            </Button>
+                          )}
+                        </Box>
+
+                        {dayMeals.length > 0 ? (
+                          <Box sx={{ ml: 1, mb: 1 }}>
+                            {dayMeals.map((meal) => (
+                              <Box
+                                key={meal.id}
+                                sx={{
+                                  p: 1,
+                                  mb: 1,
+                                  bgcolor: 'action.hover',
+                                  borderRadius: 1,
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                <Typography variant="body2" noWrap sx={{ flex: 1 }}>
+                                  {meal.recipe_name || 'Unknown Recipe'}
+                                </Typography>
+                                {selectedCalendar?.can_edit && (
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDeleteMeal(meal.id)}
+                                    sx={{ ml: 1 }}
+                                  >
+                                    <DeleteIcon fontSize="small" />
+                                  </IconButton>
+                                )}
+                              </Box>
+                            ))}
+                          </Box>
+                        ) : (
+                          <Typography variant="caption" color="text.secondary" sx={{ ml: 1, display: 'block' }}>
+                            No meals planned
+                          </Typography>
+                        )}
+                      </Box>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+
+          {/* Desktop View - Table Layout */}
+          <Box sx={{ display: { xs: 'none', md: 'block' }, overflowX: 'auto' }}>
+            <Grid container spacing={1} sx={{ minWidth: { sm: 1200 } }}>
+              <Grid item xs={12} sm={1.5}>
+                <Paper sx={{ p: { xs: 0.5, sm: 1 }, minHeight: { xs: 60, sm: 100 } }}>
+                  <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: { xs: '0.75rem', sm: 'inherit' } }}>
+                    Meal Type
                   </Typography>
                 </Paper>
               </Grid>
-            ))}
-
-            {MEAL_TYPES.map((mealType) => (
-              <Grid container item spacing={1} key={mealType}>
-                <Grid item xs={1.5}>
-                  <Paper sx={{ p: 2, minHeight: 150 }}>
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight="bold"
-                      textTransform="capitalize"
-                    >
-                      {mealType}
+              {Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i)).map((day) => (
+                <Grid item xs={12} sm={1.5} key={day.toISOString()}>
+                  <Paper sx={{ p: { xs: 0.5, sm: 1 }, textAlign: 'center', minHeight: { xs: 60, sm: 100 } }}>
+                    <Typography variant="subtitle2" fontWeight="bold" sx={{ fontSize: { xs: '0.75rem', sm: 'inherit' } }}>
+                      {format(day, 'EEE')}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: 'inherit' } }}>
+                      {format(day, 'MMM d')}
                     </Typography>
                   </Paper>
                 </Grid>
-                {weekDays.map((day) => {
-                  const dayMeals = getMealsForDateAndType(day, mealType)
-                  return (
-                    <Grid item xs={1.5} key={`${day.toISOString()}-${mealType}`}>
-                      <Paper
-                        sx={{
-                          p: 1,
-                          minHeight: 150,
-                          bgcolor: 'background.default',
-                          position: 'relative',
-                        }}
+              ))}
+
+              {MEAL_TYPES.map((mealType) => (
+                <Grid container item spacing={1} key={mealType}>
+                  <Grid item xs={12} sm={1.5}>
+                    <Paper sx={{ p: { xs: 1, sm: 2 }, minHeight: { xs: 100, sm: 150 } }}>
+                      <Typography
+                        variant="subtitle2"
+                        fontWeight="bold"
+                        textTransform="capitalize"
+                        sx={{ fontSize: { xs: '0.75rem', sm: 'inherit' } }}
                       >
-                        <Box
+                        {mealType}
+                      </Typography>
+                    </Paper>
+                  </Grid>
+                  {Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i)).map((day) => {
+                    const dayMeals = getMealsForDateAndType(day, mealType)
+                    return (
+                      <Grid item xs={1.5} key={`${day.toISOString()}-${mealType}`}>
+                        <Paper
                           sx={{
-                            cursor: selectedCalendar?.can_edit ? 'pointer' : 'default',
-                            '&:hover': selectedCalendar?.can_edit ? { bgcolor: 'action.hover' } : {},
-                            borderRadius: 1,
-                            p: 0.5,
-                            minHeight: dayMeals.length === 0 ? 100 : 'auto',
+                            p: 1,
+                            minHeight: 150,
+                            bgcolor: 'background.default',
+                            position: 'relative',
                           }}
-                          onClick={() => selectedCalendar?.can_edit && handleAddMealClick(day, mealType)}
                         >
-                          {dayMeals.map((meal) => {
-                            return (
-                              <Card key={meal.id} sx={{ mb: 1, position: 'relative' }}>
-                                <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
-                                  <Typography variant="caption" noWrap>
-                                    {meal.recipe_name || 'Unknown Recipe'}
-                                  </Typography>
-                                  {selectedCalendar?.can_edit && (
-                                    <IconButton
-                                      size="small"
-                                      sx={{ position: 'absolute', top: 0, right: 0 }}
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        handleDeleteMeal(meal.id)
-                                      }}
-                                    >
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  )}
-                                </CardContent>
-                              </Card>
-                            )
-                          })}
-                          {dayMeals.length === 0 ? (
-                            <Box
-                              display="flex"
-                              alignItems="center"
-                              justifyContent="center"
-                              minHeight={100}
-                            >
-                              <AddIcon color="action" />
-                            </Box>
-                          ) : (
-                            <Box
-                              display="flex"
-                              alignItems="center"
-                              justifyContent="center"
-                              sx={{ mt: 0.5 }}
-                            >
-                              <IconButton
-                                size="small"
-                                color="primary"
-                                sx={{
-                                  bgcolor: 'action.hover',
-                                  '&:hover': { bgcolor: 'action.selected' },
-                                }}
+                          <Box
+                            sx={{
+                              cursor: selectedCalendar?.can_edit ? 'pointer' : 'default',
+                              '&:hover': selectedCalendar?.can_edit ? { bgcolor: 'action.hover' } : {},
+                              borderRadius: 1,
+                              p: 0.5,
+                              minHeight: dayMeals.length === 0 ? 100 : 'auto',
+                            }}
+                            onClick={() => selectedCalendar?.can_edit && handleAddMealClick(day, mealType)}
+                          >
+                            {dayMeals.map((meal) => {
+                              return (
+                                <Card key={meal.id} sx={{ mb: 1, position: 'relative' }}>
+                                  <CardContent sx={{ p: 1, '&:last-child': { pb: 1 } }}>
+                                    <Typography variant="caption" noWrap>
+                                      {meal.recipe_name || 'Unknown Recipe'}
+                                    </Typography>
+                                    {selectedCalendar?.can_edit && (
+                                      <IconButton
+                                        size="small"
+                                        sx={{ position: 'absolute', top: 0, right: 0 }}
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleDeleteMeal(meal.id)
+                                        }}
+                                      >
+                                        <DeleteIcon fontSize="small" />
+                                      </IconButton>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              )
+                            })}
+                            {dayMeals.length === 0 ? (
+                              <Box
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                minHeight={100}
                               >
-                                <AddIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          )}
-                        </Box>
-                      </Paper>
-                    </Grid>
-                  )
-                })}
-              </Grid>
-            ))}
-          </Grid>
+                                <AddIcon color="action" />
+                              </Box>
+                            ) : (
+                              <Box
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                sx={{ mt: 0.5 }}
+                              >
+                                <IconButton
+                                  size="small"
+                                  color="primary"
+                                  sx={{
+                                    bgcolor: 'action.hover',
+                                    '&:hover': { bgcolor: 'action.selected' },
+                                  }}
+                                >
+                                  <AddIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
+                            )}
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    )
+                  })}
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
         </Box>
       )}
 

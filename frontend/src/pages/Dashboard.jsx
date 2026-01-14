@@ -125,14 +125,15 @@ export default function Dashboard() {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} flexWrap="wrap" gap={1}>
+        <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
           Dashboard
         </Typography>
         <Button
           variant="outlined"
           startIcon={<HelpIcon />}
           onClick={() => setTutorialOpen(true)}
+          size="small"
         >
           Tutorial
         </Button>
@@ -145,11 +146,11 @@ export default function Dashboard() {
       )}
 
       {/* Statistics Cards */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={6} md={4}>
           <Paper
             sx={{
-              p: 3,
+              p: { xs: 2, sm: 3 },
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -159,11 +160,11 @@ export default function Dashboard() {
             }}
             onClick={() => navigate('/recipes')}
           >
-            <Restaurant sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h3" fontWeight="bold">
+            <Restaurant sx={{ fontSize: { xs: 40, sm: 60 }, color: 'primary.main', mb: 2 }} />
+            <Typography variant="h3" fontWeight="bold" sx={{ fontSize: { xs: '2rem', sm: '2.5rem' } }}>
               {stats.totalRecipes}
             </Typography>
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="h6" color="text.secondary" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
               Total Recipes
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, gap: 1 }}>
@@ -174,10 +175,10 @@ export default function Dashboard() {
             </Box>
           </Paper>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Paper
             sx={{
-              p: 3,
+              p: { xs: 2, sm: 3 },
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -187,11 +188,11 @@ export default function Dashboard() {
             }}
             onClick={() => navigate('/calendar')}
           >
-            <CalendarMonth sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h3" fontWeight="bold">
+            <CalendarMonth sx={{ fontSize: { xs: 40, sm: 60 }, color: 'primary.main', mb: 2 }} />
+            <Typography variant="h3" fontWeight="bold" sx={{ fontSize: { xs: '2rem', sm: '2.5rem' } }}>
               {upcomingMeals.length}
             </Typography>
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="h6" color="text.secondary" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
               Upcoming Meals
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -199,10 +200,10 @@ export default function Dashboard() {
             </Typography>
           </Paper>
         </Grid>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Paper
             sx={{
-              p: 3,
+              p: { xs: 2, sm: 3 },
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
@@ -212,11 +213,11 @@ export default function Dashboard() {
             }}
             onClick={() => navigate('/grocery-lists')}
           >
-            <ShoppingCart sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h3" fontWeight="bold">
+            <ShoppingCart sx={{ fontSize: { xs: 40, sm: 60 }, color: 'primary.main', mb: 2 }} />
+            <Typography variant="h3" fontWeight="bold" sx={{ fontSize: { xs: '2rem', sm: '2.5rem' } }}>
               {groceryLists.length}
             </Typography>
-            <Typography variant="h6" color="text.secondary">
+            <Typography variant="h6" color="text.secondary" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
               Active Lists
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
@@ -227,9 +228,9 @@ export default function Dashboard() {
       </Grid>
 
       {/* Recent Activity and Upcoming Meals */}
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 2, sm: 3 }}>
         {/* Recent Recipes */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" mb={2}>
@@ -242,7 +243,7 @@ export default function Dashboard() {
                   No recipes yet. Start by adding your first recipe!
                 </Typography>
               ) : (
-                <List>
+                <List disablePadding>
                   {stats.recentRecipes.map((recipe) => (
                     <ListItem 
                       key={recipe.id}
@@ -250,16 +251,18 @@ export default function Dashboard() {
                         cursor: 'pointer',
                         '&:hover': { bgcolor: 'action.hover' },
                         borderRadius: 1,
+                        px: { xs: 1, sm: 2 },
+                        py: 1,
                       }}
                       onClick={() => navigate('/recipes')}
                     >
-                      <ListItemIcon>
+                      <ListItemIcon sx={{ minWidth: { xs: 36, sm: 56 } }}>
                         <Restaurant color="primary" />
                       </ListItemIcon>
                       <ListItemText
                         primary={recipe.title}
                         secondary={
-                          <Box display="flex" gap={1} alignItems="center" mt={0.5}>
+                          <Box display="flex" gap={1} alignItems="center" mt={0.5} flexWrap="wrap">
                             {recipe.prep_time && (
                               <Chip 
                                 icon={<AccessTime />} 
@@ -290,7 +293,7 @@ export default function Dashboard() {
         </Grid>
 
         {/* Upcoming Meals */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} lg={6}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" mb={2}>
@@ -303,7 +306,7 @@ export default function Dashboard() {
                   No meals planned. Start planning your week!
                 </Typography>
               ) : (
-                <List>
+                <List disablePadding>
                   {upcomingMeals.map((meal) => (
                     <ListItem 
                       key={meal.id}
@@ -311,16 +314,18 @@ export default function Dashboard() {
                         cursor: 'pointer',
                         '&:hover': { bgcolor: 'action.hover' },
                         borderRadius: 1,
+                        px: { xs: 1, sm: 2 },
+                        py: 1,
                       }}
                       onClick={() => navigate('/calendar')}
                     >
-                      <ListItemIcon>
+                      <ListItemIcon sx={{ minWidth: { xs: 36, sm: 56 } }}>
                         <CalendarMonth color="primary" />
                       </ListItemIcon>
                       <ListItemText
                         primary={meal.recipe_name || 'Meal'}
                         secondary={
-                          <Box display="flex" gap={1} alignItems="center" mt={0.5}>
+                          <Box display="flex" gap={1} alignItems="center" mt={0.5} flexWrap="wrap">
                             <Chip 
                               label={formatMealDate(meal.meal_date)} 
                               size="small"

@@ -191,7 +191,7 @@ export default function AdminDashboard() {
       setRecipesSkip(recipesSkip + limit)
       setRecipesHasMore(recipesRes.data.length === limit)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load more recipes')
+      setError(err.response?.data?.detail || 'Failed to load more menu items')
     } finally {
       setRecipesLoading(false)
     }
@@ -268,20 +268,20 @@ export default function AdminDashboard() {
       await loadData()
       setEditRecipeDialog(false)
       setEditingRecipe(null)
-      setSuccess('Recipe updated successfully')
+      setSuccess('Menu item updated successfully')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to update recipe')
+      setError(err.response?.data?.detail || 'Failed to update menu item')
     }
   }
 
   const handleDeleteRecipe = async (recipeId) => {
-    if (!window.confirm('Are you sure you want to delete this recipe?')) return
+    if (!window.confirm('Are you sure you want to delete this menu item?')) return
     try {
       await api.delete(`/admin/recipes/${recipeId}`)
       await loadData()
-      setSuccess('Recipe deleted successfully')
+      setSuccess('Menu item deleted successfully')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to delete recipe')
+      setError(err.response?.data?.detail || 'Failed to delete menu item')
     }
   }
 
@@ -291,7 +291,7 @@ export default function AdminDashboard() {
       setViewingDetails({ type: 'recipe', data: res.data })
       setViewDetailsDialog(true)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to load recipe details')
+      setError(err.response?.data?.detail || 'Failed to load menu item details')
     }
   }
 
@@ -512,7 +512,7 @@ export default function AdminDashboard() {
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <div>
                   <Typography color="textSecondary" gutterBottom>
-                    Total Recipes
+                    Total Menu Items
                   </Typography>
                   <Typography variant="h4">{stats?.total_recipes || 0}</Typography>
                 </div>
@@ -576,7 +576,17 @@ export default function AdminDashboard() {
 
       {/* Tabbed Management Interface */}
       <Paper sx={{ width: '100%' }}>
-        <Tabs value={activeTab} onChange={(e, v) => setActiveTab(v)}>
+        <Tabs
+          value={activeTab}
+          onChange={(e, v) => setActiveTab(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            '& .MuiTabs-scrollButtons': {
+              display: { xs: 'flex', sm: 'flex' },
+            },
+          }}
+        >
           <Tab label={`Users (${users.length})`} icon={<PersonIcon />} iconPosition="start" />
           <Tab label={`Menu Items (${recipes.length})`} icon={<RestaurantIcon />} iconPosition="start" />
           <Tab label={`Calendars (${calendars.length})`} icon={<CalendarIcon />} iconPosition="start" />
@@ -586,8 +596,8 @@ export default function AdminDashboard() {
 
         {/* Users Tab */}
         <TabPanel value={activeTab} index={0}>
-          <TableContainer>
-            <Table>
+          <TableContainer sx={{ overflowX: { xs: 'auto', sm: 'auto' } }}>
+            <Table sx={{ minWidth: { xs: 400, sm: 600, md: 800 } }}>
               <TableHead>
                 <TableRow>
                   <TableCell>ID</TableCell>
@@ -734,8 +744,8 @@ export default function AdminDashboard() {
             </Grid>
           </Box>
           
-          <TableContainer>
-            <Table>
+          <TableContainer sx={{ overflowX: { xs: 'auto', sm: 'auto' } }}>
+            <Table sx={{ minWidth: { xs: 400, sm: 600, md: 800 } }}>
               <TableHead>
                 <TableRow>
                   <TableCell>ID</TableCell>
@@ -822,8 +832,8 @@ export default function AdminDashboard() {
 
         {/* Calendars Tab */}
         <TabPanel value={activeTab} index={2}>
-          <TableContainer>
-            <Table>
+          <TableContainer sx={{ overflowX: { xs: 'auto', sm: 'auto' } }}>
+            <Table sx={{ minWidth: { xs: 400, sm: 600, md: 800 } }}>
               <TableHead>
                 <TableRow>
                   <TableCell>ID</TableCell>
@@ -873,8 +883,8 @@ export default function AdminDashboard() {
 
         {/* Groups Tab */}
         <TabPanel value={activeTab} index={3}>
-          <TableContainer>
-            <Table>
+          <TableContainer sx={{ overflowX: { xs: 'auto', sm: 'auto' } }}>
+            <Table sx={{ minWidth: { xs: 400, sm: 600, md: 800 } }}>
               <TableHead>
                 <TableRow>
                   <TableCell>ID</TableCell>
@@ -922,47 +932,49 @@ export default function AdminDashboard() {
                     <SettingsIcon sx={{ mr: 1 }} />
                     <Typography variant="h6">Feature Toggles</Typography>
                   </Box>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Feature</TableCell>
-                        <TableCell>Description</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell align="right">Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {featureToggles.map((toggle) => (
-                        <TableRow key={toggle.id}>
-                          <TableCell>
-                            <Typography variant="subtitle2">{toggle.feature_name}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {toggle.feature_key}
-                            </Typography>
-                          </TableCell>
-                          <TableCell>{toggle.description}</TableCell>
-                          <TableCell>
-                            <Chip
-                              label={toggle.is_enabled ? 'Enabled' : 'Disabled'}
-                              color={toggle.is_enabled ? 'success' : 'default'}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell align="right">
-                            <FormControlLabel
-                              control={
-                                <Switch
-                                  checked={toggle.is_enabled}
-                                  onChange={() => handleToggleFeature(toggle.feature_key, toggle.is_enabled)}
-                                />
-                              }
-                              label=""
-                            />
-                          </TableCell>
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Feature</TableCell>
+                          <TableCell>Description</TableCell>
+                          <TableCell>Status</TableCell>
+                          <TableCell align="right">Actions</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHead>
+                      <TableBody>
+                        {featureToggles.map((toggle) => (
+                          <TableRow key={toggle.id}>
+                            <TableCell>
+                              <Typography variant="subtitle2">{toggle.feature_name}</Typography>
+                              <Typography variant="caption" color="textSecondary">
+                                {toggle.feature_key}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>{toggle.description}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={toggle.is_enabled ? 'Enabled' : 'Disabled'}
+                                color={toggle.is_enabled ? 'success' : 'default'}
+                                size="small"
+                              />
+                            </TableCell>
+                            <TableCell align="right">
+                              <FormControlLabel
+                                control={
+                                  <Switch
+                                    checked={toggle.is_enabled}
+                                    onChange={() => handleToggleFeature(toggle.feature_key, toggle.is_enabled)}
+                                  />
+                                }
+                                label=""
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 </CardContent>
               </Card>
             </Grid>
