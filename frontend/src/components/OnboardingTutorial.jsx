@@ -153,7 +153,6 @@ export default function OnboardingTutorial({ open, onClose }) {
             },
           }}
           variant="scrollable"
-          scrollButtons="auto"
         >
           {tutorialSteps.map((step, index) => (
             <Step key={index}>
