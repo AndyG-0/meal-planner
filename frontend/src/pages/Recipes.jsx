@@ -901,7 +901,7 @@ export default function Recipes() {
                     {recipe.serving_size && (
                       <Chip
                         icon={<Restaurant />}
-                        label={`${recipe.serving_size}s`}
+                        label={`${recipe.serving_size} servings`}
                         size="small"
                       />
                     )}
