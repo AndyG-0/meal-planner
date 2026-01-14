@@ -38,8 +38,8 @@ const tutorialSteps = [
       'Add custom recipes with ingredients and instructions',
       'Rate and review recipes',
       'Mark favorites for quick access',
-      'Import and export recipes',
-      'Organize recipes into collections',
+      'Import and export menu items',
+      'Organize menu items into collections',
     ],
   },
   {
@@ -47,7 +47,7 @@ const tutorialSteps = [
     content: 'Use the calendar to plan your meals for the week or month.',
     icon: <CalendarMonth />,
     features: [
-      'Add recipes to specific dates and meal types',
+      'Add menu items to specific dates and meal types',
       'View your meal plan at a glance',
       'Customize calendar start day (Sunday/Monday)',
       'Export calendar to external apps',
@@ -70,7 +70,7 @@ const tutorialSteps = [
     icon: <GroupIcon />,
     features: [
       'Create groups and invite members',
-      'Share recipes within groups',
+      'Share menu items within groups',
       'Collaborate on meal planning',
       'Set permissions for group members',
     ],
@@ -120,15 +120,40 @@ export default function OnboardingTutorial({ open, onClose }) {
     <Dialog
       open={open}
       onClose={handleSkip}
-      maxWidth="md"
+      maxWidth="sm"
       fullWidth
       aria-labelledby="tutorial-dialog-title"
+      PaperProps={{
+        sx: {
+          maxHeight: { xs: '90vh', sm: '90vh' },
+          m: { xs: 1, sm: 2 },
+        },
+      }}
     >
-      <DialogTitle id="tutorial-dialog-title">
+      <DialogTitle id="tutorial-dialog-title" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
         Getting Started
       </DialogTitle>
-      <DialogContent>
-        <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
+      <DialogContent
+        sx={{
+          maxHeight: { xs: 'calc(90vh - 160px)', sm: 'calc(90vh - 160px)' },
+          overflow: 'auto',
+          py: { xs: 1.5, sm: 2 },
+          px: { xs: 1.5, sm: 2 },
+        }}
+      >
+        <Stepper
+          activeStep={activeStep}
+          sx={{
+            mb: 3,
+            '& .MuiStep-root': {
+              px: { xs: 0.5, sm: 1 },
+            },
+            '& .MuiStepLabel-label': {
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            },
+          }}
+          variant="scrollable"
+        >
           {tutorialSteps.map((step, index) => (
             <Step key={index}>
               <StepLabel>{step.title}</StepLabel>
@@ -137,39 +162,69 @@ export default function OnboardingTutorial({ open, onClose }) {
         </Stepper>
 
         <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Box sx={{ display: 'inline-flex', fontSize: 60, color: 'primary.main', mb: 2 }}>
+          <Box
+            sx={{
+              display: 'inline-flex',
+              fontSize: { xs: 40, sm: 60 },
+              color: 'primary.main',
+              mb: 2,
+            }}
+          >
             {currentStep.icon}
           </Box>
-          <Typography variant="h5" gutterBottom>
+          <Typography variant="h5" gutterBottom sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
             {currentStep.title}
           </Typography>
-          <Typography variant="body1" color="text.secondary" paragraph>
+          <Typography variant="body1" color="text.secondary" paragraph sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
             {currentStep.content}
           </Typography>
         </Box>
 
         {currentStep.features && (
-          <List>
+          <List sx={{ py: 0 }}>
             {currentStep.features.map((feature, index) => (
-              <ListItem key={index}>
-                <ListItemIcon>
-                  <Favorite color="primary" />
+              <ListItem key={index} sx={{ py: { xs: 0.75, sm: 1 }, px: { xs: 1, sm: 2 } }}>
+                <ListItemIcon sx={{ minWidth: { xs: 36, sm: 40 } }}>
+                  <Favorite color="primary" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
                 </ListItemIcon>
-                <ListItemText primary={feature} />
+                <ListItemText primary={feature} primaryTypographyProps={{ fontSize: { xs: '0.875rem', sm: '1rem' } }} />
               </ListItem>
             ))}
           </List>
         )}
       </DialogContent>
-      <DialogActions sx={{ justifyContent: 'space-between', px: 3, pb: 2 }}>
-        <Button onClick={handleSkip} color="inherit">
+      <DialogActions
+        sx={{
+          justifyContent: 'space-between',
+          px: { xs: 1.5, sm: 3 },
+          py: { xs: 1, sm: 2 },
+          gap: 1,
+          flexWrap: { xs: 'wrap', sm: 'nowrap' },
+        }}
+      >
+        <Button onClick={handleSkip} color="inherit" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
           Skip Tutorial
         </Button>
-        <Box>
-          <Button onClick={handleBack} disabled={activeStep === 0} sx={{ mr: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <Button
+            onClick={handleBack}
+            disabled={activeStep === 0}
+            sx={{
+              mr: { xs: 0.5, sm: 1 },
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              px: { xs: 1, sm: 2 },
+            }}
+          >
             Back
           </Button>
-          <Button onClick={handleNext} variant="contained">
+          <Button
+            onClick={handleNext}
+            variant="contained"
+            sx={{
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              px: { xs: 1.5, sm: 2.5 },
+            }}
+          >
             {activeStep === tutorialSteps.length - 1 ? 'Get Started' : 'Next'}
           </Button>
         </Box>

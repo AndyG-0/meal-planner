@@ -77,14 +77,17 @@ export default defineConfig({
     port: 3080,
     proxy: {
       '/api': {
+        // eslint-disable-next-line no-undef
         target: process.env.VITE_BACKEND_URL || 'http://localhost:8180',
         changeOrigin: true,
       },
       '/uploads': {
+        // eslint-disable-next-line no-undef
         target: process.env.VITE_BACKEND_URL || 'http://localhost:8180',
         changeOrigin: true,
       },
       '/image-proxy': {
+        // eslint-disable-next-line no-undef
         target: process.env.VITE_BACKEND_URL || 'http://localhost:8180',
         changeOrigin: true,
       }

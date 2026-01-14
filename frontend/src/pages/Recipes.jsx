@@ -452,12 +452,12 @@ export default function Recipes() {
   }
 
   const handleDeleteRecipe = async (id) => {
-    if (window.confirm('Are you sure you want to delete this recipe?')) {
+    if (window.confirm('Are you sure you want to delete this menu item?')) {
       try {
         await recipeService.deleteRecipe(id)
         deleteRecipe(id)
       } catch (err) {
-        setError(err.response?.data?.detail || 'Failed to delete recipe')
+        setError(err.response?.data?.detail || 'Failed to delete menu item')
       }
     }
   }
@@ -505,7 +505,7 @@ export default function Recipes() {
       document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to export recipes')
+      setError(err.response?.data?.detail || 'Failed to export menu items')
     }
   }
 
@@ -593,11 +593,11 @@ export default function Recipes() {
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" gutterBottom>
+      <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={2} mb={3} flexWrap="wrap">
+        <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
           Menu Items
         </Typography>
-        <Box display="flex" gap={2}>
+        <Box display="flex" gap={1} flexWrap="wrap" justifyContent={{ xs: 'flex-start', sm: 'flex-end' }}>
           <Button
             variant="outlined"
             startIcon={<ImportIcon />}
@@ -620,6 +620,7 @@ export default function Recipes() {
               startIcon={<AIIcon />}
               onClick={() => setOpenAIChat(true)}
               color="secondary"
+              size="small"
             >
               Create with AI
             </Button>
@@ -631,6 +632,7 @@ export default function Recipes() {
               setEditingRecipe(null)
               setOpenForm(true)
             }}
+            size="small"
           >
             Add Menu Item
           </Button>
@@ -645,18 +647,20 @@ export default function Recipes() {
 
       {/* Search and Filters */}
       <Box sx={{ mb: 3 }}>
-        <Box display="flex" gap={2} mb={2}>
+        <Box display="flex" gap={1} mb={2} flexWrap="wrap">
           <TextField
             fullWidth
             placeholder="Search menu items..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            size="small"
             InputProps={{
               startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
             }}
+            sx={{ minWidth: '200px', flexGrow: 1 }}
           />
-          <Button variant="contained" onClick={handleSearch}>
+          <Button variant="contained" onClick={handleSearch} sx={{ whiteSpace: 'nowrap' }}>
             Search
           </Button>
         </Box>
@@ -666,7 +670,7 @@ export default function Recipes() {
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Box display="flex" alignItems="center" gap={1}>
               <FilterIcon />
-              <Typography>
+              <Typography sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                 Advanced Filters
                 {(selectedCategory || selectedDifficulty || selectedTags.length > 0 || maxPrepTime || maxCookTime) && (
                   <Chip 
@@ -683,13 +687,13 @@ export default function Recipes() {
             <Grid container spacing={2}>
               {/* Category Filter */}
               <Grid item xs={12} sm={6} md={4}>
-                <FormControl fullWidth>
+                <FormControl fullWidth size="small">
                   <InputLabel>Category</InputLabel>
                   <Select
                     value={selectedCategory}
                     label="Category"
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    disabled={activeTab === 2} // Disable when on Staples tab
+                    disabled={activeTab === 2}
                   >
                     <MenuItem value="">
                       <em>All Categories</em>
@@ -705,7 +709,7 @@ export default function Recipes() {
 
               {/* Difficulty Filter */}
               <Grid item xs={12} sm={6} md={4}>
-                <FormControl fullWidth>
+                <FormControl fullWidth size="small">
                   <InputLabel>Difficulty</InputLabel>
                   <Select
                     value={selectedDifficulty}
@@ -728,6 +732,7 @@ export default function Recipes() {
               <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
+                  size="small"
                   type="number"
                   label="Max Prep Time (minutes)"
                   value={maxPrepTime}
@@ -740,6 +745,7 @@ export default function Recipes() {
               <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   fullWidth
+                  size="small"
                   type="number"
                   label="Max Cook Time (minutes)"
                   value={maxCookTime}
@@ -759,6 +765,7 @@ export default function Recipes() {
                   onChange={(event, newValue) => {
                     setSelectedTags(newValue.map(tag => tag.name))
                   }}
+                  size="small"
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -781,17 +788,19 @@ export default function Recipes() {
 
               {/* Clear Filters Button */}
               <Grid item xs={12}>
-                <Box display="flex" justifyContent="space-between">
+                <Box display="flex" justifyContent="space-between" flexWrap="wrap" gap={1}>
                   <Button 
-                    onClick={handleClearFilters} 
+                    onClick={handleClearFilters}
+                    size="small"
                     disabled={!selectedCategory && !selectedDifficulty && selectedTags.length === 0 && !maxPrepTime && !maxCookTime}
                   >
                     Clear All Filters
                   </Button>
                   <Button 
-                    variant="contained" 
+                    variant="contained"
                     onClick={handleSearch}
                     startIcon={<SearchIcon />}
+                    size="small"
                   >
                     Apply Filters
                   </Button>
@@ -802,7 +811,13 @@ export default function Recipes() {
         </Accordion>
       </Box>
 
-      <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)} sx={{ mb: 2 }}>
+      <Tabs 
+        value={activeTab} 
+        onChange={(e, newValue) => setActiveTab(newValue)} 
+        sx={{ mb: 2 }}
+        variant="scrollable"
+        scrollButtons="auto"
+      >
         <Tab label="All Menu Items" />
         <Tab label="Favorites" icon={<Favorite sx={{ ml: 1 }} />} iconPosition="end" />
         <Tab label="Staple Items" />
@@ -815,13 +830,13 @@ export default function Recipes() {
         </Alert>
       )}
 
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 1.5, sm: 2, md: 3 }}>
         {recipes.map((recipe) => {
           const totalTime = getTotalTime(recipe)
           const isFavorited = recipe.is_favorite || false
 
           return (
-            <Grid item xs={12} sm={6} md={4} key={recipe.id}>
+            <Grid item xs={12} sm={6} lg={4} key={recipe.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 {recipe.image_url ? (
                   <CardMedia
@@ -851,17 +866,17 @@ export default function Recipes() {
                   }}
                   onClick={() => handleViewDetails(recipe)}
                 >
-                  <Restaurant sx={{ fontSize: 60, color: 'grey.400' }} />
+                  <Restaurant sx={{ fontSize: 40, color: 'grey.400' }} />
                   <Typography variant="body2" color="text.secondary">
                     No Image
                   </Typography>
                 </Box>
-                <CardContent sx={{ flexGrow: 1 }}>
+                <CardContent sx={{ flexGrow: 1, p: { xs: 1.5, sm: 2 } }}>
                   <Typography
                     gutterBottom
                     variant="h6"
                     component="div"
-                    sx={{ cursor: 'pointer' }}
+                    sx={{ cursor: 'pointer', fontSize: { xs: '1rem', sm: '1.1rem' } }}
                     onClick={() => handleViewDetails(recipe)}
                   >
                     {recipe.title}
@@ -869,7 +884,7 @@ export default function Recipes() {
                   <Typography variant="body2" color="text.secondary" noWrap>
                     {recipe.description}
                   </Typography>
-                  <Box display="flex" gap={1} mt={1} flexWrap="wrap">
+                  <Box display="flex" gap={0.5} mt={1} flexWrap="wrap">
                     {recipe.category && (
                       <Chip label={recipe.category} size="small" color="secondary" />
                     )}
@@ -908,17 +923,18 @@ export default function Recipes() {
                     </Box>
                   )}
                 </CardContent>
-                <CardActions>
+                <CardActions sx={{ p: { xs: 1, sm: 1.5 } }}>
                   <IconButton
                     onClick={() => handleToggleFavorite(recipe, isFavorited)}
                     color="error"
+                    size="small"
                   >
                     {isFavorited ? <Favorite /> : <FavoriteBorder />}
                   </IconButton>
-                  <IconButton onClick={() => handleEdit(recipe)}>
+                  <IconButton onClick={() => handleEdit(recipe)} size="small">
                     <EditIcon />
                   </IconButton>
-                  <IconButton onClick={() => handleDeleteRecipe(recipe.id)}>
+                  <IconButton onClick={() => handleDeleteRecipe(recipe.id)} size="small">
                     <DeleteIcon />
                   </IconButton>
                 </CardActions>
@@ -937,7 +953,7 @@ export default function Recipes() {
             disabled={loadingMore}
             size="large"
           >
-            {loadingMore ? <CircularProgress size={24} /> : 'Load More Recipes'}
+            {loadingMore ? <CircularProgress size={24} /> : 'Load More Menu Items'}
           </Button>
         </Box>
       )}

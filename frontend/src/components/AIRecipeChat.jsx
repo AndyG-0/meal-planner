@@ -337,7 +337,7 @@ What would you like to create today?`,
               onClick={handleConfirmAction}
               disabled={loading}
             >
-              {loading ? 'Creating...' : 'Confirm & Create Recipe'}
+              {loading ? 'Creating...' : 'Confirm & Create Menu Item'}
             </Button>
           </Box>
         </CardContent>

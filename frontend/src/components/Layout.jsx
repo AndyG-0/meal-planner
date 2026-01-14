@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom'
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   AppBar,
   Box,
@@ -28,7 +28,7 @@ import {
   Folder as FolderIcon,
   CalendarToday as CalendarTodayIcon,
 } from '@mui/icons-material'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { useThemeMode } from '../contexts/ThemeContext'
 
@@ -37,8 +37,14 @@ const drawerWidth = 240
 export default function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const { logout, user } = useAuthStore()
   const { mode, toggleTheme } = useThemeMode()
+
+  // Close mobile drawer when location changes
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [location])
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen)
@@ -94,24 +100,24 @@ export default function Layout() {
           ml: { sm: `${drawerWidth}px` },
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ gap: { xs: 1, sm: 2 }, minHeight: { xs: 56, sm: 64 } }}>
           <IconButton
             color="inherit"
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{ mr: { xs: 0, sm: 2 }, display: { sm: 'none' } }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
             Meal Planner
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton color="inherit" onClick={toggleTheme} title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 2 } }}>
+            <IconButton color="inherit" onClick={toggleTheme} title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`} size="small">
               {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 1 }}>
               <AccountCircle />
               <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                 <Typography variant="body2" sx={{ lineHeight: 1.2, fontWeight: 500 }}>
@@ -123,7 +129,7 @@ export default function Layout() {
                 </Typography>
               </Box>
             </Box>
-            <Button color="inherit" onClick={handleLogout}>
+            <Button color="inherit" onClick={handleLogout} size="small">
               Logout
             </Button>
           </Box>
@@ -160,8 +166,9 @@ export default function Layout() {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 1.5, sm: 2, md: 3 },
           width: { sm: `calc(100% - ${drawerWidth}px)` },
+          overflow: 'auto',
         }}
       >
         <Toolbar />
