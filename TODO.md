@@ -27,9 +27,9 @@
 * ~~Add support for recipe ratings and reviews by users.~~
 * ~~Add a favorites recipe view for the user and add to the dashboard.~~
 * ~~Add more robust error handling and user feedback throughout the app.~~ (ErrorBoundary component implemented)
-* Improve the UI/UX design for better usability and aesthetics.
+* ~~Improve the UI/UX design for better usability and aesthetics.~~
 * ~~Add unit tests and integration tests for critical components.~~
-* Add proper versioning control to Docker builds and github releases
+* ~~Add proper versioning control to Docker builds and github releases~~
 * Add playwright tests
 * ~~Improve CI/CD pipelines for automated testing and deployment.~~ (Basic CI/CD pipeline implemented)
 * Add analytics tracking for user behavior and app usage.
@@ -62,5 +62,5 @@
 * ~~Copy a day, month or a week in the meal planner to another day/week/month~~
 * ~~Add the ability for the grocery list to be printed or exported to a txt file or csv.~~
 * ~~Have a way for the user to manage calendars and be able to switch calendars.~~
-* Create a new entity for simple menu items which do not require full recipes. Ex. Frozen chicken nuggets, frozen fries, etc. These need to be searchable along with the full recipes. 
-* Prepopulate the database with many of the menu items so there is something to choose from to begin with.
+* ~~Create a new entity for simple menu items which do not require full recipes. Ex. Frozen chicken nuggets, frozen fries, etc. These need to be searchable along with the full recipes.~~
+* ~~Prepopulate the database with many of the menu items so there is something to choose from to begin with.~~

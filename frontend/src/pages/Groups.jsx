@@ -390,13 +390,13 @@ export default function Groups() {
                 {groupMembers.map((member) => (
                   <ListItem key={member.id}>
                     <ListItemText
-                      primary={`User #${member.user_id}`}
+                      primary={member.user?.username || `User #${member.user_id}`}
                       secondary={
                         <Box>
                           <Chip label={member.role} size="small" sx={{ mr: 1 }} />
-                          {member.permissions && (
-                            <Typography variant="caption" color="text.secondary">
-                              Can {member.permissions.can_edit ? 'edit' : 'view'}
+                          {member.user?.email && (
+                            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                              {member.user.email}
                             </Typography>
                           )}
                         </Box>

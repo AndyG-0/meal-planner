@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
 
+    # SendGrid (optional)
+    SENDGRID_API_KEY: str = ""
+
     # OpenAI (optional)
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-3.5-turbo"

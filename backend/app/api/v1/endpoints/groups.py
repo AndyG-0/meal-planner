@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.api.v1.dependencies import get_current_user, get_db
 from app.models import Group, GroupMember, User
@@ -186,7 +187,11 @@ async def get_group_members(
 
     # Get all members
     result = await db.execute(
-        select(GroupMember).where(GroupMember.group_id == group_id).offset(skip).limit(limit)
+        select(GroupMember)
+        .where(GroupMember.group_id == group_id)
+        .options(selectinload(GroupMember.user))
+        .offset(skip)
+        .limit(limit)
     )
 
     return result.scalars().all()
@@ -258,6 +263,14 @@ async def add_group_member(
     db.add(member)
     await db.commit()
     await db.refresh(member)
+
+    # Eagerly load the user relationship
+    result = await db.execute(
+        select(GroupMember)
+        .where(GroupMember.id == member.id)
+        .options(selectinload(GroupMember.user))
+    )
+    member = result.scalar_one()
 
     return member
 

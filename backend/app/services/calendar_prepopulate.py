@@ -7,7 +7,15 @@ from datetime import datetime, timedelta
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import CalendarMeal, GroupMember, Recipe, RecipeTag, User
+from app.models import (
+    CalendarMeal,
+    GroupMember,
+    Recipe,
+    RecipeCollection,
+    RecipeCollectionItem,
+    RecipeTag,
+    User,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +38,7 @@ class CalendarPrepopulateService:
         desserts_per_day: int = 0,
         use_dietary_preferences: bool = True,
         avoid_duplicates: bool = True,
+        collection_id: int | None = None,
     ) -> tuple[int, datetime]:
         """
         Prepopulate a calendar with meals.
@@ -44,13 +53,14 @@ class CalendarPrepopulateService:
             desserts_per_day: Number of desserts to add per day
             use_dietary_preferences: Whether to filter by dietary preferences
             avoid_duplicates: Try to avoid duplicate recipes
+            collection_id: Optional collection ID to limit recipes to collection
 
         Returns:
             Tuple of (number of meals created, end date)
         """
         logger.info(
-            "Prepopulating calendar: calendar_id=%s, period=%s, meal_types=%s, use_dietary=%s",
-            calendar_id, period, meal_types, use_dietary_preferences
+            "Prepopulating calendar: calendar_id=%s, period=%s, meal_types=%s, use_dietary=%s, collection_id=%s",
+            calendar_id, period, meal_types, use_dietary_preferences, collection_id
         )
         # Calculate end date based on period
         if period == "day":
@@ -69,21 +79,23 @@ class CalendarPrepopulateService:
 
         # Get regular meal recipes
         for meal_type in meal_types:
-            recipes = await self._get_recipes_for_category(user, meal_type, use_dietary_preferences)
+            recipes = await self._get_recipes_for_category(
+                user, meal_type, use_dietary_preferences, collection_id
+            )
             recipes_by_category[meal_type] = recipes
             logger.debug("Found %d recipes for meal_type=%s", len(recipes), meal_type)
 
         # Get snack recipes if needed
         if snacks_per_day > 0:
             snack_recipes = await self._get_recipes_for_category(
-                user, "snack", use_dietary_preferences
+                user, "snack", use_dietary_preferences, collection_id
             )
             recipes_by_category["snack"] = snack_recipes
 
         # Get dessert recipes if needed
         if desserts_per_day > 0:
             dessert_recipes = await self._get_recipes_for_category(
-                user, "dessert", use_dietary_preferences
+                user, "dessert", use_dietary_preferences, collection_id
             )
             recipes_by_category["dessert"] = dessert_recipes
 
@@ -135,7 +147,11 @@ class CalendarPrepopulateService:
         return meals_created, end_date
 
     async def _get_recipes_for_category(
-        self, user: User, category: str, use_dietary_preferences: bool
+        self,
+        user: User,
+        category: str,
+        use_dietary_preferences: bool,
+        collection_id: int | None = None,
     ) -> list[Recipe]:
         """
         Get recipes for a specific category.
@@ -144,6 +160,7 @@ class CalendarPrepopulateService:
             user: The user making the request
             category: The recipe category
             use_dietary_preferences: Whether to filter by dietary preferences
+            collection_id: Optional collection ID to limit recipes to collection
 
         Returns:
             List of recipes
@@ -154,17 +171,50 @@ class CalendarPrepopulateService:
         )
         user_group_ids = [row[0] for row in group_result.all()]
 
-        # Build query for accessible recipes
-        query = select(Recipe).where(
-            Recipe.deleted_at.is_(None),
-            Recipe.category == category,
-            or_(
-                Recipe.owner_id == user.id,  # User's own recipes
-                Recipe.visibility == "public",  # Public recipes
-                (Recipe.visibility == "group")
-                & (Recipe.group_id.in_(user_group_ids)),  # Group recipes
-            ),
-        )
+        # If collection_id is provided, get recipes from that collection
+        if collection_id is not None:
+            # Verify collection exists, is not soft-deleted, and user has access
+            coll_result = await self.db.execute(
+                select(RecipeCollection).where(
+                    RecipeCollection.id == collection_id,
+                    RecipeCollection.deleted_at.is_(None),
+                )
+            )
+            collection = coll_result.scalar_one_or_none()
+            if not collection or collection.user_id != user.id:
+                logger.warning(
+                    "User %s tried to access collection %s they don't own or is deleted",
+                    user.id,
+                    collection_id,
+                )
+                raise ValueError(f"Collection {collection_id} not found or not accessible")
+
+            # Get recipe IDs from collection that match the category
+            items_result = await self.db.execute(
+                select(RecipeCollectionItem.recipe_id).where(
+                    RecipeCollectionItem.collection_id == collection_id
+                )
+            )
+            collection_recipe_ids = [row[0] for row in items_result.all()]
+
+            # Build query for recipes in collection with matching category
+            query = select(Recipe).where(
+                Recipe.id.in_(collection_recipe_ids),
+                Recipe.category == category,
+                Recipe.deleted_at.is_(None),
+            )
+        else:
+            # Build query for accessible recipes
+            query = select(Recipe).where(
+                Recipe.deleted_at.is_(None),
+                Recipe.category == category,
+                or_(
+                    Recipe.owner_id == user.id,  # User's own recipes
+                    Recipe.visibility == "public",  # Public recipes
+                    (Recipe.visibility == "group")
+                    & (Recipe.group_id.in_(user_group_ids)),  # Group recipes
+                ),
+            )
 
         # Filter by dietary preferences if requested
         if use_dietary_preferences and user.dietary_preferences:
