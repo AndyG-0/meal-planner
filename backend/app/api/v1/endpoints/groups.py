@@ -264,6 +264,14 @@ async def add_group_member(
     await db.commit()
     await db.refresh(member)
 
+    # Eagerly load the user relationship
+    result = await db.execute(
+        select(GroupMember)
+        .where(GroupMember.id == member.id)
+        .options(selectinload(GroupMember.user))
+    )
+    member = result.scalar_one()
+
     return member
 
 
