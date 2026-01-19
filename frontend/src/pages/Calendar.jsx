@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Box,
   Typography,
@@ -35,7 +35,7 @@ import {
   ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material'
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns'
-import { calendarService } from '../services'
+import { calendarService, collectionService } from '../services'
 import { useCalendarStore } from '../store/calendarStore'
 import { useAuthStore } from '../store/authStore'
 import RecipeSearchDialog from '../components/RecipeSearchDialog'
@@ -97,8 +97,10 @@ export default function Calendar() {
     desserts_per_day: 0,
     use_dietary_preferences: true,
     avoid_duplicates: true,
+    collection_id: null,
   })
   const [prepopulateLoading, setPrepopulateLoading] = useState(false)
+  const [collections, setCollections] = useState([])
   const [copyConfig, setCopyConfig] = useState({
     source_date: new Date().toISOString().split('T')[0],
     target_date: new Date().toISOString().split('T')[0],
@@ -106,6 +108,26 @@ export default function Calendar() {
     overwrite: false,
   })
   const [copyLoading, setCopyLoading] = useState(false)
+
+  // Define loadAvailableCalendars with useCallback before it's used in useEffect
+  const loadAvailableCalendars = useCallback(async () => {
+    setLoadingCalendars(true)
+    try {
+      const params = {
+        skip: calendarPage * calendarRowsPerPage,
+        limit: calendarRowsPerPage,
+      }
+      if (calendarSearchQuery) {
+        params.search = calendarSearchQuery
+      }
+      const data = await calendarService.getCalendars(params)
+      setAvailableCalendars(data)
+    } catch (err) {
+      setError(getErrorMessage(err.response?.data?.detail, 'Failed to load calendars'))
+    } finally {
+      setLoadingCalendars(false)
+    }
+  }, [calendarPage, calendarRowsPerPage, calendarSearchQuery, setError])
 
   useEffect(() => {
     loadCalendars()
@@ -123,8 +145,13 @@ export default function Calendar() {
     if (openCalendarSelector) {
       loadAvailableCalendars()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calendarPage, calendarRowsPerPage, calendarSearchQuery, openCalendarSelector])
+  }, [calendarPage, calendarRowsPerPage, calendarSearchQuery, openCalendarSelector, loadAvailableCalendars])
+
+  useEffect(() => {
+    if (openPrepopulate) {
+      loadCollections()
+    }
+  }, [openPrepopulate])
 
   const loadCalendars = async () => {
     try {
@@ -253,6 +280,7 @@ export default function Calendar() {
         desserts_per_day: parseInt(prepopulateConfig.desserts_per_day) || 0,
         use_dietary_preferences: prepopulateConfig.use_dietary_preferences,
         avoid_duplicates: prepopulateConfig.avoid_duplicates,
+        collection_id: prepopulateConfig.collection_id,
       }
 
       await calendarService.prepopulateCalendar(
@@ -272,6 +300,15 @@ export default function Calendar() {
       setError(getErrorMessage(err.response?.data?.detail, 'Failed to prepopulate calendar'))
     } finally {
       setPrepopulateLoading(false)
+    }
+  }
+
+  const loadCollections = async () => {
+    try {
+      const data = await collectionService.getCollections()
+      setCollections(data)
+    } catch (err) {
+      console.error('Failed to load collections:', err)
     }
   }
 
@@ -319,25 +356,6 @@ export default function Calendar() {
   const handleOpenCalendarSelector = async () => {
     setOpenCalendarSelector(true)
     await loadAvailableCalendars()
-  }
-
-  const loadAvailableCalendars = async () => {
-    setLoadingCalendars(true)
-    try {
-      const params = {
-        skip: calendarPage * calendarRowsPerPage,
-        limit: calendarRowsPerPage,
-      }
-      if (calendarSearchQuery) {
-        params.search = calendarSearchQuery
-      }
-      const data = await calendarService.getCalendars(params)
-      setAvailableCalendars(data)
-    } catch (err) {
-      setError(getErrorMessage(err.response?.data?.detail, 'Failed to load calendars'))
-    } finally {
-      setLoadingCalendars(false)
-    }
   }
 
   const handleCalendarSearch = () => {
@@ -773,6 +791,22 @@ export default function Calendar() {
             margin="normal"
             inputProps={{ min: 0, max: 3 }}
           />
+
+          <FormControl fullWidth margin="normal">
+            <InputLabel>Recipe Collection (Optional)</InputLabel>
+            <Select
+              value={prepopulateConfig.collection_id || ''}
+              label="Recipe Collection (Optional)"
+              onChange={(e) => setPrepopulateConfig({ ...prepopulateConfig, collection_id: e.target.value || null })}
+            >
+              <MenuItem value="">Any Collection</MenuItem>
+              {collections.map((collection) => (
+                <MenuItem key={collection.id} value={collection.id}>
+                  {collection.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <FormControlLabel
             control={

@@ -557,6 +557,7 @@ async def prepopulate_calendar(
             desserts_per_day=prepopulate_data.desserts_per_day,
             use_dietary_preferences=prepopulate_data.use_dietary_preferences,
             avoid_duplicates=prepopulate_data.avoid_duplicates,
+            collection_id=prepopulate_data.collection_id,
         )
 
         return CalendarPrepopulateResponse(

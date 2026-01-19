@@ -410,6 +410,9 @@ class CalendarPrepopulateRequest(BaseModel):
     avoid_duplicates: bool = Field(
         default=True, description="Try to avoid duplicate recipes when possible"
     )
+    collection_id: int | None = Field(
+        default=None, description="Optional collection ID to limit recipes to collection"
+    )
 
     @field_validator("meal_types")
     @classmethod
@@ -496,6 +499,7 @@ class GroupMemberResponse(GroupMemberCreate):
 
     id: int
     group_id: int
+    user: UserBasic | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
