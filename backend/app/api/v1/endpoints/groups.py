@@ -262,7 +262,7 @@ async def add_group_member(
 
     db.add(member)
     await db.commit()
-    await db.refresh(member, ['user'])
+    await db.refresh(member)
 
     return member
 

@@ -151,7 +151,7 @@ export default function Calendar() {
     if (openPrepopulate) {
       loadCollections()
     }
-  }, [openPrepopulate])
+  }, [openPrepopulate, loadCollections])
 
   const loadCalendars = async () => {
     try {
@@ -303,14 +303,14 @@ export default function Calendar() {
     }
   }
 
-  const loadCollections = async () => {
+  const loadCollections = useCallback(async () => {
     try {
       const data = await collectionService.getCollections()
       setCollections(data)
     } catch (err) {
       console.error('Failed to load collections:', err)
     }
-  }
+  }, [])
 
   const handleCopy = async () => {
     if (!selectedCalendar) return

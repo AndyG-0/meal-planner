@@ -315,6 +315,7 @@ class UserBasic(BaseModel):
 
     id: int
     username: str
+    email: str | None = None
 
     model_config = {"from_attributes": True}
 
