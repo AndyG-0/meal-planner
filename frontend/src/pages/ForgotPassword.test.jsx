@@ -46,4 +46,24 @@ describe('ForgotPassword', () => {
       expect(screen.getByText(/back to login/i)).toBeTruthy();
     });
   });
+
+  it('should display admin contact info when email is disabled', async () => {
+    vi.mocked(api.get).mockResolvedValue({
+      data: {
+        email_enabled: false,
+        admin_email: 'admin@test.com',
+      },
+    });
+
+    render(
+      <BrowserRouter>
+        <ForgotPassword />
+      </BrowserRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/password reset via email is not currently available/i)).toBeTruthy();
+    });
+    expect(screen.getByText(/admin@test.com/i)).toBeTruthy();
+  });
 });

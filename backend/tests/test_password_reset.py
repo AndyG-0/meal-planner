@@ -4,8 +4,38 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import PasswordResetToken, User
+from app.models import EmailSettings, PasswordResetToken, User
 from app.utils.auth import get_password_hash
+
+
+@pytest.mark.asyncio
+async def test_password_reset_config_default(client: AsyncClient, db_session: AsyncSession):
+    """Test password reset config endpoint with default settings."""
+    # Create default email settings
+    email_settings = EmailSettings(
+        id=1,
+        admin_email="admin@test.com",
+        sendgrid_api_key=None,
+    )
+    db_session.add(email_settings)
+    await db_session.commit()
+
+    response = await client.get("/api/v1/auth/password-reset-config")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["email_enabled"] is False
+    assert data["admin_email"] == "admin@test.com"
+
+
+@pytest.mark.asyncio
+async def test_password_reset_config_no_email_settings(client: AsyncClient):
+    """Test password reset config endpoint without email settings in DB."""
+    response = await client.get("/api/v1/auth/password-reset-config")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["email_enabled"] is False
+    # Should fallback to settings.ADMIN_EMAIL
+    assert "admin_email" in data
 
 
 @pytest.mark.asyncio
@@ -103,3 +133,25 @@ async def test_reset_password_used_token(client: AsyncClient, db_session: AsyncS
     )
     assert response.status_code == 400
     assert "Invalid" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_force_password_change_login_blocked(client: AsyncClient, db_session: AsyncSession):
+    """Test that users with force_password_change=True cannot login."""
+    # Create a test user with force_password_change flag
+    user = User(
+        username="forceduser",
+        email="forced@example.com",
+        password_hash=get_password_hash("password"),
+        force_password_change=True,
+    )
+    db_session.add(user)
+    await db_session.commit()
+
+    # Try to login
+    response = await client.post(
+        "/api/v1/auth/login",
+        data={"username": "forceduser", "password": "password"},
+    )
+    assert response.status_code == 403
+    assert "change your password" in response.json()["detail"].lower()
