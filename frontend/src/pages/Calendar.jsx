@@ -129,6 +129,16 @@ export default function Calendar() {
     }
   }, [calendarPage, calendarRowsPerPage, calendarSearchQuery, setError])
 
+  // Define loadCollections with useCallback before it's used in useEffect
+  const loadCollections = useCallback(async () => {
+    try {
+      const data = await collectionService.getCollections()
+      setCollections(data)
+    } catch (err) {
+      console.error('Failed to load collections:', err)
+    }
+  }, [])
+
   useEffect(() => {
     loadCalendars()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,7 +161,7 @@ export default function Calendar() {
     if (openPrepopulate) {
       loadCollections()
     }
-  }, [openPrepopulate])
+  }, [openPrepopulate, loadCollections])
 
   const loadCalendars = async () => {
     try {
@@ -300,15 +310,6 @@ export default function Calendar() {
       setError(getErrorMessage(err.response?.data?.detail, 'Failed to prepopulate calendar'))
     } finally {
       setPrepopulateLoading(false)
-    }
-  }
-
-  const loadCollections = async () => {
-    try {
-      const data = await collectionService.getCollections()
-      setCollections(data)
-    } catch (err) {
-      console.error('Failed to load collections:', err)
     }
   }
 

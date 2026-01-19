@@ -173,14 +173,17 @@ class CalendarPrepopulateService:
 
         # If collection_id is provided, get recipes from that collection
         if collection_id is not None:
-            # Verify collection exists and user has access
+            # Verify collection exists, is not soft-deleted, and user has access
             coll_result = await self.db.execute(
-                select(RecipeCollection).where(RecipeCollection.id == collection_id)
+                select(RecipeCollection).where(
+                    RecipeCollection.id == collection_id,
+                    RecipeCollection.deleted_at.is_(None),
+                )
             )
             collection = coll_result.scalar_one_or_none()
             if not collection or collection.user_id != user.id:
                 logger.warning(
-                    "User %s tried to access collection %s they don't own",
+                    "User %s tried to access collection %s they don't own or is deleted",
                     user.id,
                     collection_id,
                 )
