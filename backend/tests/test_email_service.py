@@ -1,7 +1,8 @@
 """Test email service functionality."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.services.email_service import EmailService
 

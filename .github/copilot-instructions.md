@@ -1,12 +1,15 @@
 # Copilot Instructions for Meal Planner
 
-## Critical Pre-Commit Requirements
+## ⚠️ CRITICAL PRE-COMMIT REQUIREMENTS ⚠️
 
-**IMPORTANT: Before considering work complete or ending your turn, you MUST:**
+**MANDATORY: Before considering ANY work complete, ending your turn, or calling report_progress for the final time, you MUST:**
 
-1. **Run all quality checks locally** - All checks must pass
-2. **Fix any linting, type checking, or test failures**
-3. **Ensure no regressions are introduced**
+1. **Run ALL quality checks locally** - Every single check must pass with zero errors
+2. **Fix ALL linting, type checking, and test failures** - No exceptions
+3. **Verify no regressions are introduced** - Existing tests must continue to pass
+4. **Never skip CI checks** - Even for "minor" changes like documentation
+
+**Failure to run and pass all CI checks before completing work is unacceptable and will result in CI failures.**
 
 ## Running Quality Checks
 
@@ -22,19 +25,21 @@ This runs all backend and frontend checks in one command.
 
 ### Individual Backend Checks
 
-Navigate to `/backend` and run:
+Navigate to `/backend` and run (ALWAYS use `uv run` prefix):
 
 ```bash
 # Linting with ruff (auto-fix available)
-ruff check app/ tests/
-ruff check app/ tests/ --fix  # Auto-fix issues
+uv run ruff check app/ tests/
+uv run ruff check app/ tests/ --fix  # Auto-fix issues
 
 # Type checking with mypy
-mypy app/ --ignore-missing-imports
+uv run mypy app/ --ignore-missing-imports
 
 # Tests with coverage
-pytest tests/ --cov=app
+uv run pytest tests/ --cov=app
 ```
+
+**IMPORTANT:** All backend checks must pass with zero errors before work is considered complete.
 
 ### Individual Frontend Checks
 
@@ -51,6 +56,8 @@ npm run test -- --coverage
 # Build verification
 npm run build
 ```
+
+**IMPORTANT:** All frontend checks must pass with zero errors before work is considered complete.
 
 ## Python Development Standards
 
@@ -147,5 +154,18 @@ All of the following MUST pass before work is complete:
 - Environment variables are loaded from `.env` file for local development
 - Use proper git commit messages following conventional commits format
 - Never commit sensitive data (API keys, passwords, etc.)
-- Always test changes locally before considering work complete
+- **ALWAYS run and pass all CI checks locally before considering work complete**
 - Document any new features or significant changes in code comments
+
+## Final Checklist Before Completing Work
+
+Before your final `report_progress` or considering work complete, verify:
+
+- [ ] `uv run ruff check app/ tests/` passes (backend)
+- [ ] `uv run mypy app/ --ignore-missing-imports` passes (backend)
+- [ ] `uv run pytest tests/ --cov=app` passes (backend)
+- [ ] `npm run lint` passes (frontend)
+- [ ] `npm run test -- --coverage` passes (frontend)
+- [ ] `npm run build` passes (frontend)
+- [ ] All changes have been committed via `report_progress`
+- [ ] No temporary or debug files are included in commits

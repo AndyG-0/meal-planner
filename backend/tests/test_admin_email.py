@@ -1,9 +1,10 @@
 """Tests for admin password reset and email settings endpoints."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from unittest.mock import patch, MagicMock
 
 from app.models import EmailSettings, User
 from app.utils.auth import create_access_token, get_password_hash, verify_password
@@ -45,7 +46,7 @@ async def test_admin_reset_user_password_no_email(client: AsyncClient, db_sessio
     assert response.status_code == 200
     data = response.json()
     assert data["message"] == "Password reset successfully"
-    
+
     # Verify password was changed
     await db_session.refresh(user)
     assert verify_password("newpassword123", user.password_hash)

@@ -4,9 +4,11 @@ applyTo: '**'
 
 # Meal Planner Development Guidelines
 
-## Pre-Commit Checklist
+## ⚠️ MANDATORY Pre-Commit Checklist ⚠️
 
-**IMPORTANT: Before ending your turn or considering work complete, ALWAYS run the full CI check suite locally.**
+**CRITICAL: Before ending your turn or considering work complete, you MUST ALWAYS run the full CI check suite locally and verify all checks pass.**
+
+**Skipping CI checks is NOT acceptable - even for documentation-only changes.**
 
 ### Running All Checks
 
@@ -23,7 +25,7 @@ This script runs:
 
 ### What Must Pass
 
-All of the following must pass before work is considered complete:
+**ALL** of the following must pass with **ZERO errors** before work is considered complete:
 - ✓ Backend ruff linting (`uv run ruff check app/ tests/`)
 - ✓ Backend mypy type checking (`uv run mypy app/ --ignore-missing-imports`)
 - ✓ Backend pytest tests (`uv run pytest tests/ --cov=app`)
@@ -31,6 +33,8 @@ All of the following must pass before work is considered complete:
 - ✓ Frontend tests with coverage (`npm run test -- --coverage`)
 - ✓ Frontend build (`npm run build`)
 - ✓ Docker image builds (optional but recommended)
+
+**No exceptions - all checks must pass before calling final report_progress or completing work.**
 
 ### Common Issues
 
@@ -46,7 +50,8 @@ All of the following must pass before work is considered complete:
 
 ### Important Notes
 
-- Always ensure dependencies are installed before running checks
-- Use `uv run` for Python commands in the backend
+- **CRITICAL**: Always ensure dependencies are installed before running checks
+- **REQUIRED**: Use `uv run` prefix for all Python commands in the backend
 - Environment variables are loaded from `.env` file for local runs
 - Docker builds require Docker/Podman to be installed
+- **MANDATORY**: Run ALL CI checks before considering work complete - no exceptions
