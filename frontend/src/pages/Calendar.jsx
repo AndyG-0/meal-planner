@@ -129,6 +129,16 @@ export default function Calendar() {
     }
   }, [calendarPage, calendarRowsPerPage, calendarSearchQuery, setError])
 
+  // Define loadCollections with useCallback before it's used in useEffect
+  const loadCollections = useCallback(async () => {
+    try {
+      const data = await collectionService.getCollections()
+      setCollections(data)
+    } catch (err) {
+      console.error('Failed to load collections:', err)
+    }
+  }, [])
+
   useEffect(() => {
     loadCalendars()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -302,15 +312,6 @@ export default function Calendar() {
       setPrepopulateLoading(false)
     }
   }
-
-  const loadCollections = useCallback(async () => {
-    try {
-      const data = await collectionService.getCollections()
-      setCollections(data)
-    } catch (err) {
-      console.error('Failed to load collections:', err)
-    }
-  }, [])
 
   const handleCopy = async () => {
     if (!selectedCalendar) return
