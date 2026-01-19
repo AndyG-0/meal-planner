@@ -43,6 +43,9 @@ class Settings(BaseSettings):
     # Backend URL for generating absolute URLs
     BACKEND_URL: str = "http://localhost:8180"
 
+    # Frontend URL for password reset and other user-facing links
+    FRONTEND_URL: str = "http://localhost:3080"
+
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
 
@@ -63,6 +66,7 @@ class Settings(BaseSettings):
 
     # SendGrid (optional)
     SENDGRID_API_KEY: str = ""
+    ADMIN_EMAIL: str = "admin@mealplanner.local"
 
     # OpenAI (optional)
     OPENAI_API_KEY: str = ""

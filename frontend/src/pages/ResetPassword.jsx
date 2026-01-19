@@ -80,7 +80,7 @@ export default function ResetPassword() {
             Reset Password
           </Typography>
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 2 }}>
-            Enter your new password below.
+            Enter your new password below. If an administrator reset your password, you must change it here.
           </Typography>
           
           {error && (

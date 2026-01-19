@@ -48,7 +48,7 @@
 * Add a grocery delivery integration to order ingredients directly from the app.
 * Add support for dietary restrictions and allergen warnings in recipes.
 * ~~Add a recipe import/export feature for sharing recipes between users.~~ (JSON import/export implemented)
-* Add a meal rating system to help users track their favorite meals.
+* ~~Add a meal rating system to help users track their favorite meals.~~
 * ~~Add a user profile page for managing personal information and preferences.~~
 * ~~Allow the user to pick which day of the week the calendar starts on. For instance Monday instead of Sunday.~~
 * ~~Create a new category for foods such as frozen foods or simple pre made foods. Hot Dogs, Hamburgers etc.~~

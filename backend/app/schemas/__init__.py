@@ -40,6 +40,7 @@ class UserResponse(UserBase):
 
     id: int
     is_admin: bool = False
+    force_password_change: bool = False
     dietary_preferences: list[str] | None = None
     calorie_target: int | None = None
     preferences: dict[str, Any] | None = None
@@ -67,6 +68,20 @@ class PasswordResetConfirm(BaseModel):
 
     token: str
     new_password: str = Field(..., min_length=8)
+
+
+class AdminPasswordReset(BaseModel):
+    """Admin password reset schema."""
+
+    temporary_password: str = Field(..., min_length=8)
+    send_email: bool = True  # Whether to send email with temporary password
+
+
+class PasswordResetConfig(BaseModel):
+    """Password reset configuration schema."""
+
+    email_enabled: bool
+    admin_email: str
 
 
 # Token Schemas
@@ -672,6 +687,32 @@ class OpenAISettingsResponse(BaseModel):
     searxng_url: str = "http://localhost:8085"  # SEARXNG URL
     updated_at: datetime | None = None
     has_api_key: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+# Email Settings Schemas
+class EmailSettingsBase(BaseModel):
+    """Base email settings schema."""
+
+    sendgrid_api_key: str | None = None
+    admin_email: str = Field(default="admin@mealplanner.local", max_length=255)
+
+
+class EmailSettingsUpdate(BaseModel):
+    """Email settings update schema."""
+
+    sendgrid_api_key: str | None = None
+    admin_email: str | None = Field(None, max_length=255)
+
+
+class EmailSettingsResponse(BaseModel):
+    """Email settings response schema (without API key)."""
+
+    id: int
+    admin_email: str
+    updated_at: datetime | None = None
+    has_sendgrid_key: bool = False
 
     model_config = {"from_attributes": True}
 

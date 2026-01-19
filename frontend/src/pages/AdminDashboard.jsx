@@ -44,6 +44,7 @@ import {
   RemoveRedEye as ViewIcon,
   Settings as SettingsIcon,
   SmartToy as AIIcon,
+  Mail as MailIcon,
   CheckCircle as CheckCircleIcon,
   Info as InfoIcon,
 } from '@mui/icons-material'
@@ -69,6 +70,7 @@ export default function AdminDashboard() {
   const [groups, setGroups] = useState([])
   const [featureToggles, setFeatureToggles] = useState([])
   const [openaiSettings, setOpenaiSettings] = useState(null)
+  const [emailSettings, setEmailSettings] = useState(null)
   const [sessionSettings, setSessionSettings] = useState(null)
   const [blockedDomains, setBlockedDomains] = useState([])
   const [newDomain, setNewDomain] = useState('')
@@ -96,6 +98,7 @@ export default function AdminDashboard() {
   const [editCalendarDialog, setEditCalendarDialog] = useState(false)
   const [editGroupDialog, setEditGroupDialog] = useState(false)
   const [viewDetailsDialog, setViewDetailsDialog] = useState(false)
+  const [passwordResetDialog, setPasswordResetDialog] = useState(false)
   
   // Edit states
   const [editingUser, setEditingUser] = useState(null)
@@ -103,6 +106,11 @@ export default function AdminDashboard() {
   const [editingCalendar, setEditingCalendar] = useState(null)
   const [editingGroup, setEditingGroup] = useState(null)
   const [viewingDetails, setViewingDetails] = useState(null)
+  
+  // Password reset states
+  const [passwordResetUser, setPasswordResetUser] = useState(null)
+  const [temporaryPassword, setTemporaryPassword] = useState('')
+  const [sendResetEmail, setSendResetEmail] = useState(true)
 
   const loadData = useCallback(async () => {
     try {
@@ -116,7 +124,7 @@ export default function AdminDashboard() {
       if (recipeDifficulty) recipeParams.difficulty = recipeDifficulty
       if (recipeVisibility) recipeParams.visibility = recipeVisibility
       
-      const [statsRes, usersRes, recipesRes, calendarsRes, groupsRes, togglesRes, openaiRes, sessionRes, blockedDomainsRes] = await Promise.all([
+      const [statsRes, usersRes, recipesRes, calendarsRes, groupsRes, togglesRes, openaiRes, emailRes, sessionRes, blockedDomainsRes] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/admin/users'),
         api.get('/admin/recipes', { params: recipeParams }),
@@ -124,6 +132,7 @@ export default function AdminDashboard() {
         api.get('/admin/groups'),
         api.get('/admin/feature-toggles'),
         api.get('/admin/openai-settings'),
+        api.get('/admin/email-settings'),
         api.get('/admin/session-settings'),
         api.get('/admin/blocked-domains'),
       ])
@@ -134,6 +143,7 @@ export default function AdminDashboard() {
       setGroups(groupsRes.data)
       setFeatureToggles(togglesRes.data)
       setOpenaiSettings(openaiRes.data)
+      setEmailSettings(emailRes.data)
       setSessionSettings(sessionRes.data)
       setBlockedDomains(blockedDomainsRes.data)
       
@@ -242,6 +252,56 @@ export default function AdminDashboard() {
       setSuccess('User deleted successfully')
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to delete user')
+    }
+  }
+
+  const handleOpenPasswordReset = (user) => {
+    setPasswordResetUser(user)
+    setTemporaryPassword('')
+    setSendResetEmail(true)
+    setPasswordResetDialog(true)
+  }
+
+  const generateRandomPassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%'
+    const passwordLength = 16
+
+    let password = ''
+
+    if (window.crypto && window.crypto.getRandomValues) {
+      const randomValues = new Uint32Array(passwordLength)
+      window.crypto.getRandomValues(randomValues)
+      for (let i = 0; i < passwordLength; i++) {
+        const index = randomValues[i] % chars.length
+        password += chars.charAt(index)
+      }
+    } else {
+      // Fallback for environments without crypto.getRandomValues
+      for (let i = 0; i < passwordLength; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
+    }
+    setTemporaryPassword(password)
+  }
+
+  const handleResetPassword = async () => {
+    if (!temporaryPassword || temporaryPassword.length < 8) {
+      setError('Password must be at least 8 characters long')
+      return
+    }
+
+    try {
+      await api.post(`/admin/users/${passwordResetUser.id}/reset-password`, {
+        temporary_password: temporaryPassword,
+        send_email: sendResetEmail,
+      })
+      setSuccess(`Password reset for ${passwordResetUser.username}`)
+      setPasswordResetDialog(false)
+      setPasswordResetUser(null)
+      setTemporaryPassword('')
+      await loadData()
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to reset password')
     }
   }
 
@@ -415,6 +475,17 @@ export default function AdminDashboard() {
       setSuccess('OpenAI settings updated successfully')
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to update OpenAI settings')
+    }
+  }
+
+  // Email Settings Management
+  const handleUpdateEmailSettings = async (settings) => {
+    try {
+      await api.patch('/admin/email-settings', settings)
+      await loadData()
+      setSuccess('Email settings updated successfully')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update email settings')
     }
   }
 
@@ -631,6 +702,15 @@ export default function AdminDashboard() {
                     <TableCell align="right">
                       <IconButton size="small" onClick={() => handleEditUser(u)} color="primary">
                         <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenPasswordReset(u)}
+                        color="warning"
+                        disabled={u.id === user?.id}
+                        title="Reset password"
+                      >
+                        <span style={{ fontSize: '14px' }}>🔑</span>
                       </IconButton>
                       <IconButton
                         size="small"
@@ -1061,6 +1141,56 @@ export default function AdminDashboard() {
               </Card>
             </Grid>
 
+            {/* Email Settings Section */}
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <MailIcon sx={{ mr: 1 }} />
+                    <Typography variant="h6">Email Configuration</Typography>
+                  </Box>
+                  {emailSettings && (
+                    <Box component="form" sx={{ mt: 2 }}>
+                      <TextField
+                        fullWidth
+                        label="SendGrid API Key"
+                        type="password"
+                        value={emailSettings.sendgrid_api_key || ''}
+                        onChange={(e) => setEmailSettings({ ...emailSettings, sendgrid_api_key: e.target.value })}
+                        margin="normal"
+                        placeholder="SG...."
+                        helperText={emailSettings.has_sendgrid_key ? "SendGrid API key is set (enter new key to update)" : "Your SendGrid API key (kept secure)"}
+                        InputProps={{
+                          endAdornment: emailSettings.has_sendgrid_key && (
+                            <InputAdornment position="end">
+                              <CheckCircleIcon color="success" titleAccess="SendGrid API key is configured" />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Admin Email"
+                        type="email"
+                        value={emailSettings.admin_email || ''}
+                        onChange={(e) => setEmailSettings({ ...emailSettings, admin_email: e.target.value })}
+                        margin="normal"
+                        helperText="Administrator email address for password reset contact"
+                      />
+                      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                          variant="contained"
+                          onClick={() => handleUpdateEmailSettings(emailSettings)}
+                        >
+                          Save Email Settings
+                        </Button>
+                      </Box>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
             {/* Session Settings Section */}
             <Grid item xs={12}>
               <Card>
@@ -1236,6 +1366,65 @@ export default function AdminDashboard() {
         <DialogActions>
           <Button onClick={() => setEditUserDialog(false)}>Cancel</Button>
           <Button onClick={handleSaveUser} variant="contained">Save</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Password Reset Dialog */}
+      <Dialog open={passwordResetDialog} onClose={() => setPasswordResetDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Reset Password for {passwordResetUser?.username}</DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          <Typography variant="body2" color="textSecondary" gutterBottom>
+            Set a temporary password for this user. They will be required to change it on their next login.
+          </Typography>
+          <Box sx={{ my: 2 }}>
+            <TextField
+              fullWidth
+              label="Temporary Password"
+              type="password"
+              value={temporaryPassword}
+              onChange={(e) => setTemporaryPassword(e.target.value)}
+              margin="normal"
+              helperText="Minimum 8 characters"
+            />
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={generateRandomPassword}
+              sx={{ mt: 1 }}
+            >
+              Generate Random Password
+            </Button>
+            {temporaryPassword && (
+              <Box sx={{ mt: 1, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                <Typography variant="caption" component="div">
+                  Generated password: <code>{temporaryPassword}</code>
+                </Typography>
+                <Typography variant="caption" color="error" component="div">
+                  Warning: This temporary password is visible on screen. Ensure no one can see your screen when you use or share it.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={sendResetEmail}
+                onChange={(e) => setSendResetEmail(e.target.checked)}
+              />
+            }
+            label="Send password via email (if SendGrid is enabled)"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPasswordResetDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleResetPassword}
+            variant="contained"
+            color="warning"
+            disabled={!temporaryPassword || temporaryPassword.length < 8}
+          >
+            Reset Password
+          </Button>
         </DialogActions>
       </Dialog>
 
