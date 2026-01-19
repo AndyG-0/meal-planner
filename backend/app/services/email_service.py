@@ -13,14 +13,25 @@ logger = logging.getLogger(__name__)
 class EmailService:
     """Service for sending emails via SendGrid."""
 
-    def __init__(self, api_key: str | None = None, from_email: str | None = None) -> None:
+    # Sentinel value to distinguish "not provided" from "explicitly None"
+    _NOT_PROVIDED = object()
+
+    def __init__(
+        self, api_key: str | None | object = _NOT_PROVIDED, from_email: str | None = None
+    ) -> None:
         """Initialize the SendGrid API client.
 
         Args:
-            api_key: SendGrid API key. If None, uses the one from settings.
+            api_key: SendGrid API key. If not provided, uses the one from settings.
+                     If explicitly None, does not configure SendGrid.
             from_email: From email address. If None, uses SMTP_FROM from settings.
         """
-        key = api_key or settings.SENDGRID_API_KEY
+        # Use provided api_key, fall back to settings only if not provided at all
+        if api_key is self._NOT_PROVIDED:
+            key = settings.SENDGRID_API_KEY
+        else:
+            key = api_key
+
         self.client = SendGridAPIClient(key) if key else None
         self.api_key = key
         self.from_email = from_email or settings.SMTP_FROM or "noreply@mealplanner.local"

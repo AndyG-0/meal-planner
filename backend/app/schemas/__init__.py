@@ -73,7 +73,6 @@ class PasswordResetConfirm(BaseModel):
 class AdminPasswordReset(BaseModel):
     """Admin password reset schema."""
 
-    user_id: int
     temporary_password: str = Field(..., min_length=8)
     send_email: bool = True  # Whether to send email with temporary password
 
