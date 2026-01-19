@@ -30,6 +30,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
+    force_password_change = Column(Boolean, default=False, nullable=False)  # Admin-set password change flag
     dietary_preferences = Column(JSON)  # List of preferences: vegan, vegetarian, keto, etc.
     calorie_target = Column(Integer)  # Daily calorie target
     preferences = Column(
@@ -330,6 +331,17 @@ class SessionSettings(Base):
     id = Column(Integer, primary_key=True)
     session_ttl_value = Column(Integer, default=90, nullable=False)  # Numeric value
     session_ttl_unit = Column(String(20), default="days", nullable=False)  # minutes, hours, or days
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class EmailSettings(Base):
+    """Email settings model for email service configuration."""
+
+    __tablename__ = "email_settings"
+
+    id = Column(Integer, primary_key=True)
+    sendgrid_api_key = Column(String(255), nullable=True)
+    admin_email = Column(String(255), default="admin@mealplanner.local", nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

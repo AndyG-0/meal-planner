@@ -8,10 +8,11 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies import get_current_user, get_db
-from app.config import get_app_version
+from app.config import get_app_version, settings
 from app.models import (
     BlockedImageDomain,
     Calendar,
+    EmailSettings,
     FeatureToggle,
     Group,
     GroupMember,
@@ -21,11 +22,14 @@ from app.models import (
     User,
 )
 from app.schemas import (
+    AdminPasswordReset,
     AdminStatsResponse,
     AdminUserListResponse,
     AdminUserUpdate,
     BlockedDomainCreate,
     BlockedDomainResponse,
+    EmailSettingsResponse,
+    EmailSettingsUpdate,
     FeatureToggleCreate,
     FeatureToggleResponse,
     FeatureToggleUpdate,
@@ -39,6 +43,8 @@ from app.schemas import (
     SessionSettingsUpdate,
     UserResponse,
 )
+from app.services.email_service import get_email_service
+from app.utils.auth import get_password_hash
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -232,6 +238,84 @@ async def delete_user(
 
     user.deleted_at = datetime.utcnow()
     await db.commit()
+
+
+@router.post("/users/{user_id}/reset-password", response_model=dict[str, str])
+async def admin_reset_user_password(
+    user_id: int,
+    reset_data: AdminPasswordReset,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    admin: Annotated[User, Depends(require_admin)],
+) -> dict[str, str]:
+    """Admin reset a user's password (admin only).
+
+    Sets a temporary password that the user must change on next login.
+    Optionally sends an email with the temporary password via SendGrid.
+    """
+    from datetime import datetime
+
+    # Find user
+    result = await db.execute(select(User).where(User.id == user_id, User.deleted_at.is_(None)))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Prevent admin from resetting their own password this way
+    if user.id == admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Admin cannot use this endpoint to reset their own password",
+        )
+
+    logger.info("Admin %s resetting password for user %s", admin.id, user.id)
+
+    # Set temporary password
+    user.password_hash = get_password_hash(reset_data.temporary_password)
+    user.force_password_change = True  # User must change password on next login
+    user.updated_at = datetime.utcnow()
+
+    await db.commit()
+    await db.refresh(user)
+
+    # Send email if requested and SendGrid is configured
+    if reset_data.send_email:
+        # Load API key from database settings, fallback to environment variable
+        email_settings_result = await db.execute(
+            select(EmailSettings).where(EmailSettings.id == 1)
+        )
+        email_settings = email_settings_result.scalar_one_or_none()
+        api_key = email_settings.sendgrid_api_key if email_settings else None
+        admin_email = email_settings.admin_email if email_settings else None
+
+        # Fallback to environment variable if not set in database
+        if not api_key:
+            api_key = settings.SENDGRID_API_KEY
+
+        if api_key:
+            # Check feature toggle
+            toggle_result = await db.execute(
+                select(FeatureToggle).where(FeatureToggle.feature_key == "sendgrid_email")
+            )
+            toggle = toggle_result.scalar_one_or_none()
+            sendgrid_enabled = toggle.is_enabled if toggle else False
+
+            if sendgrid_enabled:
+                email_service = get_email_service(api_key=api_key, from_email=admin_email)
+                await email_service.send_admin_password_email(
+                    to_email=user.email,
+                    temporary_password=reset_data.temporary_password,
+                    user_name=user.username,
+                )
+                logger.info("Admin password reset email sent to user %s", user.id)
+                return {
+                    "message": f"Password reset for user {user.username}. Email sent with temporary password.",
+                    "user_id": str(user.id),
+                }
+
+    return {
+        "message": f"Password reset for user {user.username}. SendGrid email not configured.",
+        "user_id": str(user.id),
+    }
 
 
 @router.get("/recipes")
@@ -988,3 +1072,49 @@ async def remove_blocked_domain(
     logger.info("Removing blocked image domain: %s", domain.domain)
     await db.delete(domain)
     await db.commit()
+
+# Email Settings Management
+@router.get("/email-settings", response_model=EmailSettingsResponse)
+async def get_email_settings(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _admin: Annotated[User, Depends(require_admin)],
+) -> EmailSettingsResponse:
+    """Get email settings (admin only, API key not included)."""
+
+    result = await db.execute(select(EmailSettings).where(EmailSettings.id == 1))
+    settings = result.scalar_one_or_none()
+    if not settings:
+        # Create default settings if they don't exist
+        settings = EmailSettings(id=1)
+        db.add(settings)
+        await db.commit()
+        await db.refresh(settings)
+
+    response = EmailSettingsResponse.model_validate(settings)
+    response.has_sendgrid_key = bool(settings.sendgrid_api_key)
+    return response
+
+
+@router.patch("/email-settings", response_model=EmailSettingsResponse)
+async def update_email_settings(
+    settings_update: EmailSettingsUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _admin: Annotated[User, Depends(require_admin)],
+) -> EmailSettingsResponse:
+    """Update email settings (admin only)."""
+
+    result = await db.execute(select(EmailSettings).where(EmailSettings.id == 1))
+    settings = result.scalar_one_or_none()
+    if not settings:
+        settings = EmailSettings(id=1)
+        db.add(settings)
+
+    update_data = settings_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(settings, key, value)
+
+    await db.commit()
+    await db.refresh(settings)
+    response = EmailSettingsResponse.model_validate(settings)
+    response.has_sendgrid_key = bool(settings.sendgrid_api_key)
+    return response

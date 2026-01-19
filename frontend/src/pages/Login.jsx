@@ -34,7 +34,14 @@ export default function Login() {
       setAuth(user, data.access_token, data.refresh_token)
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed')
+      const detail = err.response?.data?.detail || 'Login failed'
+      if (err.response?.status === 403 && detail.toLowerCase().includes('change')) {
+        // User must change password
+        setError(`${detail} Please go to your settings and change your password.`)
+        navigate('/user-settings')
+      } else {
+        setError(detail)
+      }
     } finally {
       setLoading(false)
     }

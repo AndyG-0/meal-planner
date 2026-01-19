@@ -10,9 +10,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.dependencies import get_current_active_user
+from app.config import settings
 from app.database import get_db
-from app.models import PasswordResetToken, User
+from app.models import EmailSettings, FeatureToggle, PasswordResetToken, User
 from app.schemas import (
+    PasswordResetConfig,
     PasswordResetConfirm,
     PasswordResetRequest,
     Token,
@@ -20,6 +22,7 @@ from app.schemas import (
     UserResponse,
     UserUpdate,
 )
+from app.services.email_service import get_email_service
 from app.utils.auth import (
     create_access_token_async,
     create_refresh_token,
@@ -37,6 +40,23 @@ async def check_setup_required(db: AsyncSession = Depends(get_db)) -> dict[str, 
     result = await db.execute(select(func.count(User.id)))
     user_count = result.scalar() or 0
     return {"setup_required": user_count == 0}
+
+
+@router.get("/password-reset-config", response_model=PasswordResetConfig)
+async def get_password_reset_config(db: AsyncSession = Depends(get_db)) -> PasswordResetConfig:
+    """Get password reset configuration (public endpoint)."""
+    email_enabled = False
+    email_service = get_email_service()
+
+    if email_service.is_configured():
+        # Check feature toggle
+        toggle_result = await db.execute(
+            select(FeatureToggle).where(FeatureToggle.feature_key == "sendgrid_email")
+        )
+        toggle = toggle_result.scalar_one_or_none()
+        email_enabled = toggle.is_enabled if toggle else False
+
+    return PasswordResetConfig(email_enabled=email_enabled, admin_email=settings.ADMIN_EMAIL)
 
 
 @router.post("/setup-admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -144,6 +164,14 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Check if user must change password (admin reset)
+    if user.force_password_change:
+        logger.info("User must change password on login: user_id=%s", user.id)
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must change your password before continuing",
+        )
+
     # Create access token with configurable TTL
     access_token = await create_access_token_async(data={"sub": str(user.id)}, db=db)
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
@@ -177,6 +205,8 @@ async def update_me(
     if "password" in update_data:
         logger.info("Password change for user_id=%s", current_user.id)
         current_user.password_hash = get_password_hash(update_data["password"])
+        # Clear the force password change flag when user updates password
+        current_user.force_password_change = False
         del update_data["password"]
 
     # Check if email is being changed and if it's already taken
@@ -252,11 +282,6 @@ async def request_password_reset(
         return {"message": "If the email exists in our system, a password reset link will be sent."}
 
     # Invalidate any existing tokens for this user
-    await db.execute(
-        select(PasswordResetToken).where(
-            PasswordResetToken.user_id == user.id, PasswordResetToken.used_at.is_(None)
-        )
-    )
     existing_tokens = (
         (
             await db.execute(
@@ -274,7 +299,7 @@ async def request_password_reset(
 
     # Generate secure token
     reset_token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(hours=1)
+    expires_at = datetime.utcnow() + timedelta(hours=24)
 
     # Create token record
     token_record = PasswordResetToken(
@@ -286,15 +311,52 @@ async def request_password_reset(
     await db.commit()
 
     logger.info("Password reset token generated for user_id=%s", user.id)
-    # TODO: Send email with reset link
-    # For now, return the token (in production, this should be sent via email)
-    # return {"message": "Password reset email sent"}
 
-    # Development mode: return token directly
+    # Check if SendGrid email feature is enabled
+    sendgrid_enabled = False
+    email_service = None
+    api_key = None
+
+    # First check feature toggle
+    toggle_result = await db.execute(
+        select(FeatureToggle).where(FeatureToggle.feature_key == "sendgrid_email")
+    )
+    toggle = toggle_result.scalar_one_or_none()
+    sendgrid_enabled = toggle.is_enabled if toggle else False
+
+    # Load API key from database settings, fallback to environment variable
+    if sendgrid_enabled:
+        email_settings_result = await db.execute(
+            select(EmailSettings).where(EmailSettings.id == 1)
+        )
+        email_settings = email_settings_result.scalar_one_or_none()
+        api_key = email_settings.sendgrid_api_key if email_settings else None
+        admin_email = email_settings.admin_email if email_settings else None
+
+        # Fallback to environment variable if not set in database
+        if not api_key:
+            api_key = settings.SENDGRID_API_KEY
+
+        if api_key:
+            email_service = get_email_service(api_key=api_key, from_email=admin_email)
+
+    # Send email if SendGrid is enabled and configured
+    if sendgrid_enabled and email_service and email_service.is_configured():
+        reset_link = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
+        await email_service.send_password_reset_email(
+            to_email=user.email,
+            reset_link=reset_link,
+            user_name=user.username,
+        )
+        logger.info("Password reset email sent via SendGrid for user_id=%s", user.id)
+        return {"message": "Password reset email sent successfully. Please check your email."}
+
+    # Development/fallback mode: return token directly
+    logger.info("SendGrid email disabled, returning token in response for user_id=%s", user.id)
     return {
-        "message": "Password reset token generated (in production, this would be emailed)",
-        "token": reset_token,  # Remove in production
-        "expires_in": "1 hour",
+        "message": "Password reset token generated (SendGrid email not configured)",
+        "token": reset_token,  # Remove in production when SendGrid is enabled
+        "expires_in": "24 hours",
     }
 
 
@@ -342,8 +404,9 @@ async def reset_password(
             detail="User not found",
         )
 
-    # Update password
+    # Update password and clear force password change flag
     user.password_hash = get_password_hash(reset_data.new_password)
+    user.force_password_change = False
 
     # Mark token as used
     token_record.used_at = datetime.utcnow()
