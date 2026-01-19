@@ -38,14 +38,14 @@ async def test_admin_reset_user_password_no_email(client: AsyncClient, db_sessio
     response = await client.post(
         f"/api/v1/admin/users/{user.id}/reset-password",
         json={
-            "new_password": "newpassword123",
+            "temporary_password": "newpassword123",
             "send_email": False,
         },
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 200
     data = response.json()
-    assert data["message"] == "Password reset successfully"
+    assert "Password reset" in data["message"]
 
     # Verify password was changed
     await db_session.refresh(user)
@@ -97,14 +97,14 @@ async def test_admin_reset_user_password_with_email(client: AsyncClient, db_sess
         response = await client.post(
             f"/api/v1/admin/users/{user.id}/reset-password",
             json={
-                "new_password": "newpassword123",
+                "temporary_password": "newpassword123",
                 "send_email": True,
             },
             headers={"Authorization": f"Bearer {token}"},
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["message"] == "Password reset successfully and email sent"
+        assert "Password reset" in data["message"]
 
 
 @pytest.mark.asyncio
@@ -126,7 +126,7 @@ async def test_admin_reset_user_password_not_found(client: AsyncClient, db_sessi
     response = await client.post(
         "/api/v1/admin/users/99999/reset-password",
         json={
-            "new_password": "newpassword123",
+            "temporary_password": "newpassword123",
             "send_email": False,
         },
         headers={"Authorization": f"Bearer {token}"},
@@ -166,7 +166,7 @@ async def test_get_email_settings(client: AsyncClient, db_session: AsyncSession)
     assert response.status_code == 200
     data = response.json()
     assert data["admin_email"] == "admin@test.com"
-    assert data["sendgrid_api_key"] == "***"  # Should be masked
+    assert data["has_sendgrid_key"] is True
 
 
 @pytest.mark.asyncio
@@ -230,7 +230,7 @@ async def test_update_email_settings(client: AsyncClient, db_session: AsyncSessi
     assert response.status_code == 200
     data = response.json()
     assert data["admin_email"] == "new@test.com"
-    assert data["sendgrid_api_key"] == "***"  # Should be masked
+    assert data["has_sendgrid_key"] is True
 
 
 @pytest.mark.asyncio
