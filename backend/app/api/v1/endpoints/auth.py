@@ -56,7 +56,16 @@ async def get_password_reset_config(db: AsyncSession = Depends(get_db)) -> Passw
         toggle = toggle_result.scalar_one_or_none()
         email_enabled = toggle.is_enabled if toggle else False
 
-    return PasswordResetConfig(email_enabled=email_enabled, admin_email=settings.ADMIN_EMAIL)
+    # Get admin email from EmailSettings with fallback to settings.ADMIN_EMAIL
+    email_settings_result = await db.execute(select(EmailSettings).limit(1))
+    email_settings = email_settings_result.scalar_one_or_none()
+    admin_email = (
+        email_settings.admin_email
+        if email_settings is not None and email_settings.admin_email
+        else settings.ADMIN_EMAIL
+    )
+
+    return PasswordResetConfig(email_enabled=email_enabled, admin_email=admin_email)
 
 
 @router.post("/setup-admin", response_model=UserResponse, status_code=status.HTTP_201_CREATED)

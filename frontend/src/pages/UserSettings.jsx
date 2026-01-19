@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   Container,
   Paper,
@@ -24,6 +25,7 @@ import { useAuthStore } from '../store/authStore'
 
 export default function UserSettings() {
   const { user, setUser } = useAuthStore()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [preferences, setPreferences] = useState({
     calendar_start_day: 'sunday',
     theme: 'light',
@@ -34,6 +36,7 @@ export default function UserSettings() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showForcePasswordWarning, setShowForcePasswordWarning] = useState(false)
 
   const commonDietaryPrefs = [
     'Vegan',
@@ -48,7 +51,14 @@ export default function UserSettings() {
   ]
 
   useEffect(() => {
+    // Check if redirected here for force password change
+    if (searchParams.get('forcePasswordChange') === 'true') {
+      setShowForcePasswordWarning(true)
+      // Remove the query parameter from URL
+      setSearchParams({})
+    }
     loadUserSettings()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadUserSettings = async () => {
@@ -103,6 +113,12 @@ export default function UserSettings() {
           <SettingsIcon sx={{ mr: 1, fontSize: 32 }} />
           <Typography variant="h4">User Settings</Typography>
         </Box>
+
+        {showForcePasswordWarning && (
+          <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setShowForcePasswordWarning(false)}>
+            You must change your password before continuing. Please update your password in the Change Password section below.
+          </Alert>
+        )}
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>

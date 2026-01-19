@@ -264,9 +264,22 @@ export default function AdminDashboard() {
 
   const generateRandomPassword = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%'
+    const passwordLength = 16
+
     let password = ''
-    for (let i = 0; i < 16; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length))
+
+    if (window.crypto && window.crypto.getRandomValues) {
+      const randomValues = new Uint32Array(passwordLength)
+      window.crypto.getRandomValues(randomValues)
+      for (let i = 0; i < passwordLength; i++) {
+        const index = randomValues[i] % chars.length
+        password += chars.charAt(index)
+      }
+    } else {
+      // Fallback for environments without crypto.getRandomValues
+      for (let i = 0; i < passwordLength; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length))
+      }
     }
     setTemporaryPassword(password)
   }
@@ -1385,6 +1398,9 @@ export default function AdminDashboard() {
               <Box sx={{ mt: 1, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
                 <Typography variant="caption" component="div">
                   Generated password: <code>{temporaryPassword}</code>
+                </Typography>
+                <Typography variant="caption" color="error" component="div">
+                  Warning: This temporary password is visible on screen. Ensure no one can see your screen when you use or share it.
                 </Typography>
               </Box>
             )}

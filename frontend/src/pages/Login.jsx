@@ -36,9 +36,8 @@ export default function Login() {
     } catch (err) {
       const detail = err.response?.data?.detail || 'Login failed'
       if (err.response?.status === 403 && detail.toLowerCase().includes('change')) {
-        // User must change password
-        setError(`${detail} Please go to your settings and change your password.`)
-        navigate('/user-settings')
+        // User must change password - redirect to settings with an indicator
+        navigate('/user-settings?forcePasswordChange=true')
       } else {
         setError(detail)
       }

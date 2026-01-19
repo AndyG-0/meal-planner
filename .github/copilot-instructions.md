@@ -149,4 +149,3 @@ All of the following MUST pass before work is complete:
 - Never commit sensitive data (API keys, passwords, etc.)
 - Always test changes locally before considering work complete
 - Document any new features or significant changes in code comments
-- Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.
