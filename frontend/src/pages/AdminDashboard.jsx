@@ -72,6 +72,7 @@ export default function AdminDashboard() {
   const [openaiSettings, setOpenaiSettings] = useState(null)
   const [emailSettings, setEmailSettings] = useState(null)
   const [sessionSettings, setSessionSettings] = useState(null)
+  const [krogerSettings, setKrogerSettings] = useState(null)
   const [blockedDomains, setBlockedDomains] = useState([])
   const [newDomain, setNewDomain] = useState('')
   const [newDomainReason, setNewDomainReason] = useState('')
@@ -124,7 +125,7 @@ export default function AdminDashboard() {
       if (recipeDifficulty) recipeParams.difficulty = recipeDifficulty
       if (recipeVisibility) recipeParams.visibility = recipeVisibility
       
-      const [statsRes, usersRes, recipesRes, calendarsRes, groupsRes, togglesRes, openaiRes, emailRes, sessionRes, blockedDomainsRes] = await Promise.all([
+      const [statsRes, usersRes, recipesRes, calendarsRes, groupsRes, togglesRes, openaiRes, emailRes, sessionRes, krogerRes, blockedDomainsRes] = await Promise.all([
         api.get('/admin/stats'),
         api.get('/admin/users'),
         api.get('/admin/recipes', { params: recipeParams }),
@@ -134,6 +135,7 @@ export default function AdminDashboard() {
         api.get('/admin/openai-settings'),
         api.get('/admin/email-settings'),
         api.get('/admin/session-settings'),
+        api.get('/admin/kroger-settings'),
         api.get('/admin/blocked-domains'),
       ])
       setStats(statsRes.data)
@@ -145,6 +147,7 @@ export default function AdminDashboard() {
       setOpenaiSettings(openaiRes.data)
       setEmailSettings(emailRes.data)
       setSessionSettings(sessionRes.data)
+      setKrogerSettings(krogerRes.data)
       setBlockedDomains(blockedDomainsRes.data)
       
       // Set pagination state for recipes
@@ -497,6 +500,17 @@ export default function AdminDashboard() {
       setSuccess('Session settings updated successfully')
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to update session settings')
+    }
+  }
+
+  // Kroger Settings Management
+  const handleUpdateKrogerSettings = async (settings) => {
+    try {
+      await api.patch('/admin/kroger-settings', settings)
+      await loadData()
+      setSuccess('Kroger settings updated successfully')
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to update Kroger settings')
     }
   }
 
@@ -1239,6 +1253,195 @@ export default function AdminDashboard() {
                           onClick={() => handleUpdateSessionSettings(sessionSettings)}
                         >
                           Save Session Settings
+                        </Button>
+                      </Box>
+                    </Box>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Kroger API Settings Section */}
+            <Grid item xs={12}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <RestaurantIcon sx={{ mr: 1 }} />
+                    <Typography variant="h6">Kroger API Configuration</Typography>
+                  </Box>
+                  {krogerSettings && (
+                    <Box component="form" sx={{ mt: 2 }}>
+                      <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                        Configure Kroger API credentials for product search and shopping cart integration.
+                      </Typography>
+
+                      {/* Client Credentials (for catalog/location) */}
+                      <Typography variant="subtitle2" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
+                        Product Search & Location (Client Credentials)
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        label="Client ID"
+                        value={krogerSettings.client_id || ''}
+                        onChange={(e) => setKrogerSettings({ ...krogerSettings, client_id: e.target.value })}
+                        margin="normal"
+                        helperText="Client ID for catalog and location APIs"
+                        InputProps={{
+                          endAdornment: krogerSettings.has_client_credentials && (
+                            <InputAdornment position="end">
+                              <CheckCircleIcon color="success" />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Client Secret"
+                        type="password"
+                        value={krogerSettings.client_secret || ''}
+                        onChange={(e) => setKrogerSettings({ ...krogerSettings, client_secret: e.target.value })}
+                        margin="normal"
+                        helperText="Client Secret for catalog and location APIs"
+                        InputProps={{
+                          endAdornment: krogerSettings.has_client_credentials && (
+                            <InputAdornment position="end">
+                              <CheckCircleIcon color="success" />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+
+                      {/* OAuth Credentials (for cart/identity) */}
+                      <Typography variant="subtitle2" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
+                        Shopping Cart & Identity (OAuth2)
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        label="OAuth Client ID"
+                        value={krogerSettings.oauth_client_id || ''}
+                        onChange={(e) => setKrogerSettings({ ...krogerSettings, oauth_client_id: e.target.value })}
+                        margin="normal"
+                        helperText="OAuth Client ID for cart and identity APIs"
+                        InputProps={{
+                          endAdornment: krogerSettings.has_oauth_credentials && (
+                            <InputAdornment position="end">
+                              <CheckCircleIcon color="success" />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="OAuth Client Secret"
+                        type="password"
+                        value={krogerSettings.oauth_client_secret || ''}
+                        onChange={(e) => setKrogerSettings({ ...krogerSettings, oauth_client_secret: e.target.value })}
+                        margin="normal"
+                        helperText="OAuth Client Secret for cart and identity APIs"
+                        InputProps={{
+                          endAdornment: krogerSettings.has_oauth_credentials && (
+                            <InputAdornment position="end">
+                              <CheckCircleIcon color="success" />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Redirect URI"
+                        value={krogerSettings.redirect_uri || ''}
+                        onChange={(e) => setKrogerSettings({ ...krogerSettings, redirect_uri: e.target.value })}
+                        margin="normal"
+                        helperText="OAuth redirect URI (e.g., http://localhost:3080/kroger/callback)"
+                      />
+
+                      {/* API Configuration */}
+                      <Typography variant="subtitle2" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
+                        API Configuration
+                      </Typography>
+                      <FormControl fullWidth margin="normal">
+                        <InputLabel id="kroger-env-label">Environment</InputLabel>
+                        <Select
+                          labelId="kroger-env-label"
+                          label="Environment"
+                          value={krogerSettings.environment || 'production'}
+                          onChange={(e) => setKrogerSettings({ ...krogerSettings, environment: e.target.value })}
+                        >
+                          <MenuItem value="production">Production</MenuItem>
+                          <MenuItem value="certification">Certification</MenuItem>
+                        </Select>
+                      </FormControl>
+                      <TextField
+                        fullWidth
+                        label="Base URL"
+                        value={krogerSettings.base_url || 'https://api.kroger.com'}
+                        onChange={(e) => setKrogerSettings({ ...krogerSettings, base_url: e.target.value })}
+                        margin="normal"
+                        helperText="Kroger API base URL (usually https://api.kroger.com)"
+                      />
+
+                      {/* Checkout URLs */}
+                      <Typography variant="subtitle2" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
+                        Checkout Configuration
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        label="Checkout URL (Production)"
+                        value={krogerSettings.checkout_url || ''}
+                        onChange={(e) => setKrogerSettings({ ...krogerSettings, checkout_url: e.target.value })}
+                        margin="normal"
+                        helperText="URL to redirect users to for Kroger checkout in production environment"
+                        placeholder="e.g., https://www.kroger.com/checkout"
+                      />
+                      <TextField
+                        fullWidth
+                        label="Checkout URL (Certification)"
+                        value={krogerSettings.certification_checkout_url || ''}
+                        onChange={(e) => setKrogerSettings({ ...krogerSettings, certification_checkout_url: e.target.value })}
+                        margin="normal"
+                        helperText="URL to redirect users to for Kroger checkout in certification environment"
+                        placeholder="e.g., https://www-cert.kroger.com/checkout"
+                      />
+
+                      {/* Cart URLs */}
+                      <Typography variant="subtitle2" sx={{ mt: 3, mb: 1, fontWeight: 'bold' }}>
+                        Cart View Configuration
+                      </Typography>
+                      <TextField
+                        fullWidth
+                        label="Cart URL (Production)"
+                        value={krogerSettings.cart_url || ''}
+                        onChange={(e) => setKrogerSettings({ ...krogerSettings, cart_url: e.target.value })}
+                        margin="normal"
+                        helperText="URL to redirect users to for viewing Kroger cart in production environment"
+                        placeholder="e.g., https://www.kroger.com/cart"
+                      />
+                      <TextField
+                        fullWidth
+                        label="Cart URL (Certification)"
+                        value={krogerSettings.certification_cart_url || ''}
+                        onChange={(e) => setKrogerSettings({ ...krogerSettings, certification_cart_url: e.target.value })}
+                        margin="normal"
+                        helperText="URL to redirect users to for viewing Kroger cart in certification environment"
+                        placeholder="e.g., https://www-cert.kroger.com/cart"
+                      />
+
+                      <Alert severity="info" sx={{ mt: 2 }}>
+                        <Typography variant="body2">
+                          <strong>Feature Toggles:</strong> After configuring credentials, enable the appropriate feature toggles:
+                        </Typography>
+                        <ul style={{ marginTop: '8px', paddingLeft: '20px' }}>
+                          <li><strong>kroger_product_search</strong> - For location and product catalog search</li>
+                          <li><strong>kroger_shopping_cart</strong> - For shopping cart and user identity</li>
+                        </ul>
+                      </Alert>
+
+                      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                          variant="contained"
+                          onClick={() => handleUpdateKrogerSettings(krogerSettings)}
+                        >
+                          Save Kroger Settings
                         </Button>
                       </Box>
                     </Box>

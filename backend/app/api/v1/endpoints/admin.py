@@ -16,6 +16,7 @@ from app.models import (
     FeatureToggle,
     Group,
     GroupMember,
+    KrogerSettings,
     OpenAISettings,
     Recipe,
     SessionSettings,
@@ -33,6 +34,8 @@ from app.schemas import (
     FeatureToggleCreate,
     FeatureToggleResponse,
     FeatureToggleUpdate,
+    KrogerSettingsResponse,
+    KrogerSettingsUpdate,
     OpenAIModelInfo,
     OpenAIModelsListResponse,
     OpenAISettingsResponse,
@@ -1118,3 +1121,63 @@ async def update_email_settings(
     response = EmailSettingsResponse.model_validate(settings)
     response.has_sendgrid_key = bool(settings.sendgrid_api_key)
     return response
+
+
+# Kroger Settings Management
+@router.get("/kroger-settings", response_model=KrogerSettingsResponse)
+async def get_kroger_settings(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _admin: Annotated[User, Depends(require_admin)],
+) -> KrogerSettingsResponse:
+    """Get Kroger settings (admin only, secrets not included)."""
+
+    result = await db.execute(select(KrogerSettings).where(KrogerSettings.id == 1))
+    settings_obj = result.scalar_one_or_none()
+    if not settings_obj:
+        # Create default settings if they don't exist
+        settings_obj = KrogerSettings(id=1)
+        db.add(settings_obj)
+        await db.commit()
+        await db.refresh(settings_obj)
+
+    response = KrogerSettingsResponse.model_validate(settings_obj)
+    response.has_client_credentials = bool(
+        getattr(settings_obj, "client_id", None) and getattr(settings_obj, "client_secret", None)
+    )
+    response.has_oauth_credentials = bool(
+        getattr(settings_obj, "oauth_client_id", None)
+        and getattr(settings_obj, "oauth_client_secret", None)
+    )
+    return response
+
+
+@router.patch("/kroger-settings", response_model=KrogerSettingsResponse)
+async def update_kroger_settings(
+    settings_update: KrogerSettingsUpdate,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    _admin: Annotated[User, Depends(require_admin)],
+) -> KrogerSettingsResponse:
+    """Update Kroger settings (admin only)."""
+
+    result = await db.execute(select(KrogerSettings).where(KrogerSettings.id == 1))
+    settings_obj = result.scalar_one_or_none()
+    if not settings_obj:
+        settings_obj = KrogerSettings(id=1)
+        db.add(settings_obj)
+
+    update_data = settings_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(settings_obj, key, value)
+
+    await db.commit()
+    await db.refresh(settings_obj)
+    response = KrogerSettingsResponse.model_validate(settings_obj)
+    response.has_client_credentials = bool(
+        getattr(settings_obj, "client_id", None) and getattr(settings_obj, "client_secret", None)
+    )
+    response.has_oauth_credentials = bool(
+        getattr(settings_obj, "oauth_client_id", None)
+        and getattr(settings_obj, "oauth_client_secret", None)
+    )
+    return response
+

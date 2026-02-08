@@ -5,8 +5,7 @@ import { useAuthStore } from '../store/authStore'
 
 const ThemeContext = createContext()
 
-// Export the hook in a separate file would be better for Fast Refresh,
-// but for simplicity we're keeping it here
+// eslint-disable-next-line react-refresh/only-export-components
 export const useThemeMode = () => useContext(ThemeContext)
 
 export function ThemeProvider({ children }) {

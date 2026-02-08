@@ -21,8 +21,21 @@ router = APIRouter(prefix="/grocery-lists", tags=["Grocery Lists"])
 def consolidate_ingredients(recipes: list[Recipe]) -> list[dict]:
     """Consolidate ingredients from multiple recipes."""
     ingredient_map = {}
+    menu_items = []
 
     for recipe in recipes:
+        # If recipe has no ingredients or empty ingredients list, add it as a menu item
+        if not recipe.ingredients or len(recipe.ingredients) == 0:
+            menu_items.append({
+                "name": f"{recipe.title} (Menu Item)",
+                "quantity": 1,
+                "unit": "item",
+                "category": "Menu Items",
+                "checked": False,
+                "is_menu_item": True,
+            })
+            continue
+
         for ingredient in recipe.ingredients:
             name = ingredient["name"].lower()
             quantity = float(ingredient["quantity"])
@@ -45,6 +58,7 @@ def consolidate_ingredients(recipes: list[Recipe]) -> list[dict]:
                             "unit": unit,
                             "category": None,
                             "checked": False,
+                            "is_menu_item": False,
                         }
             else:
                 ingredient_map[name] = {
@@ -53,9 +67,11 @@ def consolidate_ingredients(recipes: list[Recipe]) -> list[dict]:
                     "unit": unit,
                     "category": None,
                     "checked": False,
+                    "is_menu_item": False,
                 }
 
-    return list(ingredient_map.values())
+    # Combine ingredients and menu items
+    return list(ingredient_map.values()) + menu_items
 
 
 @router.post("", response_model=GroceryListResponse, status_code=status.HTTP_201_CREATED)

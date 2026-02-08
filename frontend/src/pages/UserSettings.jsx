@@ -18,10 +18,12 @@ import {
   CardContent,
   FormControlLabel,
   Switch,
+  Tooltip,
 } from '@mui/material'
 import { Settings as SettingsIcon, Person as PersonIcon } from '@mui/icons-material'
 import api from '../services/api'
 import { useAuthStore } from '../store/authStore'
+import { krogerService } from '../services'
 
 export default function UserSettings() {
   const { user, setUser } = useAuthStore()
@@ -37,6 +39,8 @@ export default function UserSettings() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showForcePasswordWarning, setShowForcePasswordWarning] = useState(false)
+  const [krogerAuthStatus, setKrogerAuthStatus] = useState({ authenticated: false })
+  const [krogerCartEnabled, setKrogerCartEnabled] = useState(false)
 
   const commonDietaryPrefs = [
     'Vegan',
@@ -58,8 +62,49 @@ export default function UserSettings() {
       setSearchParams({})
     }
     loadUserSettings()
+    loadKrogerFeatureToggles()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Load Kroger auth status when cart feature is enabled
+  useEffect(() => {
+    if (krogerCartEnabled) {
+      loadKrogerAuthStatus()
+    }
+  }, [krogerCartEnabled])
+
+  const loadKrogerFeatureToggles = async () => {
+    try {
+      const toggles = await krogerService.getFeatureToggles()
+      setKrogerCartEnabled(toggles.kroger_shopping_cart || false)
+    } catch (err) {
+      console.error('Failed to load Kroger feature toggles:', err)
+    }
+  }
+
+  const loadKrogerAuthStatus = async () => {
+    try {
+      const status = await krogerService.getAuthStatus()
+      setKrogerAuthStatus(status)
+    } catch (err) {
+      console.error('Failed to load Kroger auth status:', err)
+      setKrogerAuthStatus({ authenticated: false })
+    }
+  }
+
+  const handleKrogerLogout = async () => {
+    try {
+      const userConfirmed = window.confirm('Are you sure you want to disconnect from Kroger?')
+      if (!userConfirmed) return
+
+      await krogerService.logout()
+      setKrogerAuthStatus({ authenticated: false })
+      setSuccess('Successfully disconnected from Kroger')
+    } catch (err) {
+      setError('Failed to logout from Kroger')
+      console.error('Logout failed:', err)
+    }
+  }
 
   const loadUserSettings = async () => {
     try {
@@ -161,6 +206,45 @@ export default function UserSettings() {
             </Grid>
           </CardContent>
         </Card>
+
+        {/* Kroger Login Section */}
+        {krogerCartEnabled && (
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <PersonIcon sx={{ mr: 1 }} />
+                <Typography variant="h6">Kroger Login</Typography>
+              </Box>
+              <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                Kroger login status
+              </Typography>
+
+              {krogerAuthStatus?.authenticated ? (
+                <Box>
+                  <Alert severity="success" sx={{ mb: 2 }}>
+                    Connected to Kroger
+                    {krogerAuthStatus.kroger_email && ` as ${krogerAuthStatus.kroger_email}`}
+                  </Alert>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                    <Tooltip title="Disconnect from Kroger">
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={handleKrogerLogout}
+                      >
+                        Logout
+                      </Button>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              ) : (
+                <Alert severity="info">
+                  Your Kroger account is not connected. Connect your account in the Grocery Lists page to access Kroger features.
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* General Preferences */}
         <Card sx={{ mb: 3 }}>
