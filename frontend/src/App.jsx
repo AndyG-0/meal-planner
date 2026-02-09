@@ -15,6 +15,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import UserSettings from './pages/UserSettings'
 import Collections from './pages/Collections'
 import SetupAdmin from './pages/SetupAdmin'
+import KrogerCallback from './pages/KrogerCallback'
 import { useAuthStore } from './store/authStore'
 import { useSetupStore } from './store/setupStore'
 import { authService } from './services'
@@ -127,6 +128,7 @@ function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/kroger/callback" element={<KrogerCallback />} />
       <Route path="/" element={<Layout />}>
         <Route index element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="recipes" element={<ProtectedRoute><Recipes /></ProtectedRoute>} />

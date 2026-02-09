@@ -72,6 +72,15 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-3.5-turbo"
 
+    # Kroger API (optional)
+    KROGER_CLIENT_ID: str = ""
+    KROGER_CLIENT_SECRET: str = ""
+    KROGER_OAUTH_CLIENT_ID: str = ""
+    KROGER_OAUTH_CLIENT_SECRET: str = ""
+    KROGER_REDIRECT_URI: str = ""
+    KROGER_BASE_URL: str = "https://api.kroger.com"
+    KROGER_ENVIRONMENT: str = "production"  # production or certification
+
     # Recipe Images
     DEFAULT_RECIPE_IMAGE: str = "/uploads/recipes/missing-image.jpg"
 

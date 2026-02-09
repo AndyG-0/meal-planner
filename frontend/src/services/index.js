@@ -310,3 +310,126 @@ export const collectionService = {
     await api.delete(`/collections/${collectionId}/recipes/${recipeId}`)
   },
 }
+
+export const krogerService = {
+  async getSettings() {
+    const response = await api.get('/admin/kroger-settings')
+    return response.data
+  },
+
+  async updateSettings(data) {
+    const response = await api.patch('/admin/kroger-settings', data)
+    return response.data
+  },
+
+  async getCurrentLocation() {
+    const response = await api.get('/kroger/locations/current')
+    return response.data
+  },
+
+  async searchLocations(zipCode, latitude, longitude, radiusMiles) {
+    const params = {}
+    if (zipCode) params.zip_code = zipCode
+    if (latitude) params.latitude = latitude
+    if (longitude) params.longitude = longitude
+    if (radiusMiles) params.radius_miles = radiusMiles
+    
+    const response = await api.post('/kroger/locations/search', params)
+    return response.data
+  },
+
+  async saveLocation(locationData) {
+    const response = await api.post('/kroger/locations/save', locationData)
+    return response.data
+  },
+
+  async searchProducts(term, locationId, fulfillment = 'PICKUP', start = 0, limit = 50) {
+    const response = await api.post('/kroger/products/search', {
+      term,
+      location_id: locationId,
+      fulfillment,
+      start,
+      limit,
+    })
+    return response.data
+  },
+
+  async getAuthorizationUrl() {
+    const response = await api.get('/kroger/auth/authorize')
+    return response.data
+  },
+
+  async handleCallback(code, state) {
+    const response = await api.post('/kroger/auth/callback', {
+      code,
+      state,
+    })
+    return response.data
+  },
+
+  async getAuthStatus() {
+    const response = await api.get('/kroger/auth/status')
+    return response.data
+  },
+
+  async addToCart(items) {
+    const response = await api.post('/kroger/cart/add', {
+      items,
+    })
+    return response.data
+  },
+
+  async getCart() {
+    const response = await api.get('/kroger/cart')
+    return response.data
+  },
+
+  async getCartUrl() {
+    const response = await api.get('/kroger/cart-url')
+    return response.data
+  },
+
+  async getCheckoutUrl() {
+    const response = await api.get('/kroger/checkout-url')
+    return response.data
+  },
+
+  async logout() {
+    const response = await api.post('/kroger/logout')
+    return response.data
+  },
+
+  async getFeatureToggles() {
+    const response = await api.get('/features/enabled')
+    return response.data
+  },
+
+  // In-app cart methods
+  async getAppCart() {
+    const response = await api.get('/kroger/app-cart')
+    return response.data
+  },
+
+  async addToAppCart(item) {
+    const response = await api.post('/kroger/app-cart/items', item)
+    return response.data
+  },
+
+  async updateCartItem(itemId, updates) {
+    const response = await api.patch(`/kroger/app-cart/items/${itemId}`, updates)
+    return response.data
+  },
+
+  async removeFromAppCart(itemId) {
+    await api.delete(`/kroger/app-cart/items/${itemId}`)
+  },
+
+  async clearAppCart() {
+    await api.delete('/kroger/app-cart')
+  },
+
+  async sendCartToKroger(confirmed = false) {
+    const response = await api.post('/kroger/app-cart/send-to-kroger', { confirmed })
+    return response.data
+  },
+}

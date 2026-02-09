@@ -530,6 +530,11 @@ class GroceryListItem(BaseModel):
     unit: str
     category: str | None = None
     checked: bool = False
+    # Kroger product correlation
+    kroger_product_id: str | None = None
+    kroger_upc: str | None = None
+    kroger_price: float | None = None
+    kroger_product_name: str | None = None
 
 
 class GroceryListCreate(BaseModel):
@@ -876,3 +881,326 @@ class RecipeIngredientResponse(RecipeIngredientBase):
     ingredient_recipe: "RecipeResponse | None" = None
 
     model_config = {"from_attributes": True}
+
+
+# Kroger Settings Schemas
+class KrogerSettingsBase(BaseModel):
+    """Base Kroger settings schema."""
+
+    client_id: str | None = None
+    client_secret: str | None = None
+    oauth_client_id: str | None = None
+    oauth_client_secret: str | None = None
+    redirect_uri: str | None = None
+    base_url: str = Field(default="https://api.kroger.com", max_length=255)
+    environment: str = Field(default="production", pattern="^(production|certification)$")
+    checkout_url: str | None = Field(None, max_length=500)
+    certification_checkout_url: str | None = Field(None, max_length=500)
+    cart_url: str | None = Field(None, max_length=500)
+    certification_cart_url: str | None = Field(None, max_length=500)
+
+
+class KrogerSettingsUpdate(BaseModel):
+    """Kroger settings update schema."""
+
+    client_id: str | None = None
+    client_secret: str | None = None
+    oauth_client_id: str | None = None
+    oauth_client_secret: str | None = None
+    redirect_uri: str | None = None
+    base_url: str | None = Field(None, max_length=255)
+    environment: str | None = Field(None, pattern="^(production|certification)$")
+    checkout_url: str | None = Field(None, max_length=500)
+    certification_checkout_url: str | None = Field(None, max_length=500)
+    cart_url: str | None = Field(None, max_length=500)
+    certification_cart_url: str | None = Field(None, max_length=500)
+
+
+class KrogerSettingsResponse(BaseModel):
+    """Kroger settings response schema (without secrets)."""
+
+    id: int
+    redirect_uri: str | None = None
+    base_url: str
+    environment: str
+    checkout_url: str | None = None
+    certification_checkout_url: str | None = None
+    cart_url: str | None = None
+    certification_cart_url: str | None = None
+    updated_at: datetime | None = None
+    has_client_credentials: bool = False
+    has_oauth_credentials: bool = False
+
+    model_config = {"from_attributes": True}
+
+
+# Kroger Brand URLs Schemas
+class KrogerBrandUrlsBase(BaseModel):
+    """Base Kroger brand URLs schema."""
+
+    brand: str = Field(..., max_length=100)
+    display_name: str = Field(..., max_length=100)
+    cart_url: str | None = Field(None, max_length=500)
+    checkout_url: str | None = Field(None, max_length=500)
+    certification_cart_url: str | None = Field(None, max_length=500)
+    certification_checkout_url: str | None = Field(None, max_length=500)
+    is_active: bool = True
+
+
+class KrogerBrandUrlsCreate(KrogerBrandUrlsBase):
+    """Kroger brand URLs creation schema."""
+
+
+class KrogerBrandUrlsUpdate(BaseModel):
+    """Kroger brand URLs update schema."""
+
+    display_name: str | None = Field(None, max_length=100)
+    cart_url: str | None = Field(None, max_length=500)
+    checkout_url: str | None = Field(None, max_length=500)
+    certification_cart_url: str | None = Field(None, max_length=500)
+    certification_checkout_url: str | None = Field(None, max_length=500)
+    is_active: bool | None = None
+
+
+class KrogerBrandUrlsResponse(KrogerBrandUrlsBase):
+    """Kroger brand URLs response schema."""
+
+    id: int
+    created_at: datetime
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# Kroger User Location Schemas
+class KrogerLocationBase(BaseModel):
+    """Base Kroger location schema."""
+
+    location_id: str = Field(..., max_length=20)
+    location_name: str = Field(..., max_length=255)
+    location_address: str | None = Field(None, max_length=500)
+    location_chain: str | None = Field(None, max_length=100)
+    location_data: dict[str, Any] | None = None
+
+
+class KrogerLocationCreate(KrogerLocationBase):
+    """Kroger location creation schema."""
+
+
+class KrogerLocationResponse(KrogerLocationBase):
+    """Kroger location response schema."""
+
+    id: int
+    user_id: int
+    created_at: datetime
+    updated_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# Kroger Auth Schemas
+class KrogerAuthCallbackRequest(BaseModel):
+    """Kroger OAuth2 callback request schema."""
+
+    code: str
+    state: str | None = None
+
+
+class KrogerAuthResponse(BaseModel):
+    """Kroger auth response schema."""
+
+    authenticated: bool
+    kroger_user_id: str | None = None
+    kroger_email: str | None = None
+    kroger_name: str | None = None
+    expires_at: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# Kroger Product Search Schemas
+class KrogerProductSearchRequest(BaseModel):
+    """Kroger product search request schema."""
+
+    term: str = Field(..., min_length=1, max_length=200)
+    location_id: str = Field(..., max_length=20)
+    fulfillment: str = Field(default="PICKUP", pattern="^(PICKUP|DELIVERY)$")
+    limit: int = Field(default=20, ge=1, le=50)
+
+
+class KrogerProductResponse(BaseModel):
+    """Kroger product response schema."""
+
+    product_id: str
+    upc: str | None = None
+    brand: str | None = None
+    description: str
+    size: str | None = None
+    price: float | None = None
+    regular_price: float | None = None
+    on_sale: bool = False
+    image_url: str | None = None
+    categories: list[str] = []
+    aisle_locations: list[dict[str, Any]] = []
+
+
+class KrogerProductSearchResponse(BaseModel):
+    """Kroger product search response schema."""
+
+    products: list[KrogerProductResponse]
+    total: int
+    has_more: bool = False
+
+
+# Kroger Location Search Schemas
+class KrogerLocationSearchRequest(BaseModel):
+    """Kroger location search request schema."""
+
+    zip_code: str | None = Field(None, max_length=10)
+    lat_long: str | None = None
+    radius_in_miles: int = Field(default=10, ge=1, le=100)
+    limit: int = Field(default=10, ge=1, le=200)
+    chain: str | None = None
+
+
+class KrogerStoreLocationResponse(BaseModel):
+    """Kroger store location response schema."""
+
+    location_id: str
+    name: str
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    zip_code: str | None = None
+    phone: str | None = None
+    chain: str | None = None
+    distance: float | None = None
+    hours: dict[str, Any] | None = None
+    departments: list[str] = []
+
+
+class KrogerLocationSearchResponse(BaseModel):
+    """Kroger location search response schema."""
+
+    locations: list[KrogerStoreLocationResponse]
+    total: int
+
+
+# Kroger Cart Schemas
+class KrogerCartItem(BaseModel):
+    """Kroger cart item schema."""
+
+    upc: str
+    quantity: int = Field(default=1, ge=1)
+    modality: str = Field(default="INSTORE", pattern="^(INSTORE|PICKUP|DELIVERY|SHIP)$")
+
+
+class KrogerAddToCartRequest(BaseModel):
+    """Kroger add to cart request schema."""
+
+    items: list[KrogerCartItem]
+
+
+class KrogerAddToCartResponse(BaseModel):
+    """Kroger add to cart response schema."""
+
+    success: bool
+    message: str
+    items_added: int = 0
+
+
+class KrogerCartResponse(BaseModel):
+    """Kroger cart response schema."""
+
+    cart_id: str | None = None
+    items: list[dict[str, Any]] = []
+    total_quantity: int = 0
+    estimated_total: float | None = None
+    last_modified: datetime | None = None
+
+    model_config = {"from_attributes": True}
+
+
+# In-App Kroger Cart Schemas
+class KrogerAppCartItem(BaseModel):
+    """In-app Kroger cart item schema."""
+
+    product_id: str
+    upc: str
+    product_name: str
+    brand: str | None = None
+    size: str | None = None
+    price: float | None = None
+    image_url: str | None = None
+    quantity: int = Field(default=1, ge=1)
+    fulfillment_type: str = Field(default="PICKUP", pattern="^(PICKUP|DELIVERY)$")
+    grocery_list_item_name: str | None = None
+
+
+class KrogerAppCartItemCreate(BaseModel):
+    """Schema for adding items to in-app cart."""
+
+    product_id: str
+    upc: str
+    product_name: str
+    brand: str | None = None
+    size: str | None = None
+    price: float | None = None
+    image_url: str | None = None
+    quantity: int = Field(default=1, ge=1)
+    fulfillment_type: str = Field(default="PICKUP", pattern="^(PICKUP|DELIVERY)$")
+    grocery_list_item_name: str | None = None
+
+
+class KrogerAppCartItemUpdate(BaseModel):
+    """Schema for updating cart items."""
+
+    quantity: int | None = Field(None, ge=1)
+    fulfillment_type: str | None = Field(None, pattern="^(PICKUP|DELIVERY)$")
+
+
+class KrogerAppCartItemResponse(BaseModel):
+    """In-app cart item response schema."""
+
+    id: int
+    user_id: int
+    product_id: str
+    upc: str
+    product_name: str
+    brand: str | None = None
+    size: str | None = None
+    price: float | None = None
+    image_url: str | None = None
+    quantity: int
+    fulfillment_type: str
+    grocery_list_item_name: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class KrogerAppCartResponse(BaseModel):
+    """In-app cart response schema."""
+
+    items: list[KrogerAppCartItemResponse]
+    total_items: int
+    total_quantity: int
+    estimated_total: float | None = None
+    fulfillment_type: str
+
+
+class KrogerSendToKrogerRequest(BaseModel):
+    """Request to send in-app cart to Kroger."""
+
+    confirmed: bool = Field(default=False)  # User must confirm they understand the limitations
+
+
+class KrogerSendToKrogerResponse(BaseModel):
+    """Response from sending cart to Kroger."""
+
+    success: bool
+    message: str
+    items_sent: int
+    errors: list[str] = []
+

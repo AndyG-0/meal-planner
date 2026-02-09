@@ -396,3 +396,123 @@ class RecipeCollectionItem(Base):
     recipe = relationship("Recipe")
 
     __table_args__ = (UniqueConstraint("collection_id", "recipe_id", name="uq_collection_recipe"),)
+
+
+class KrogerSettings(Base):
+    """Kroger API settings model for product search and shopping cart integration."""
+
+    __tablename__ = "kroger_settings"
+
+    id = Column(Integer, primary_key=True)
+    # Client credentials for catalog/location (server-side only)
+    client_id = Column(String(255), nullable=True)
+    client_secret = Column(String(255), nullable=True)
+    # OAuth2 credentials for cart/identity (auth code flow)
+    oauth_client_id = Column(String(255), nullable=True)
+    oauth_client_secret = Column(String(255), nullable=True)
+    redirect_uri = Column(String(500), nullable=True)
+    # API configuration
+    base_url = Column(String(255), default="https://api.kroger.com", nullable=False)
+    # Environment: production or certification
+    environment = Column(String(50), default="production", nullable=False)
+    # Checkout URL for production and certification environments
+    checkout_url = Column(String(500), nullable=True)
+    certification_checkout_url = Column(String(500), nullable=True)
+    # Cart view URL for production and certification environments
+    cart_url = Column(String(500), nullable=True)
+    certification_cart_url = Column(String(500), nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class KrogerUserLocation(Base):
+    """User's selected Kroger store location for product searches and cart."""
+
+    __tablename__ = "kroger_user_locations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    location_id = Column(String(20), nullable=False)  # 8-character Kroger location ID
+    location_name = Column(String(255), nullable=False)
+    location_address = Column(String(500), nullable=True)
+    location_chain = Column(String(100), nullable=True)  # kroger, ralphs, etc.
+    # Store this for easy retrieval without API calls
+    location_data = Column(JSON, nullable=True)  # Full location response from API
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User")
+
+    __table_args__ = (UniqueConstraint("user_id", name="uq_user_kroger_location"),)
+
+
+class KrogerBrandUrls(Base):
+    """Brand-specific URLs for Kroger family of stores (cart and checkout URLs)."""
+
+    __tablename__ = "kroger_brand_urls"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # Brand/chain name (e.g., "KROGER", "RALPHS", "FRED MEYER")
+    brand = Column(String(100), nullable=False, unique=True, index=True)
+    # Display name for UI
+    display_name = Column(String(100), nullable=False)
+    # Production URLs
+    cart_url = Column(String(500), nullable=True)
+    checkout_url = Column(String(500), nullable=True)
+    # Certification/testing URLs
+    certification_cart_url = Column(String(500), nullable=True)
+    certification_checkout_url = Column(String(500), nullable=True)
+    # Metadata
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class KrogerUserAuth(Base):
+    """User's Kroger OAuth2 tokens for cart and identity access."""
+
+    __tablename__ = "kroger_user_auth"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    access_token = Column(Text, nullable=False)  # OAuth2 access token
+    refresh_token = Column(Text, nullable=True)  # OAuth2 refresh token
+    token_type = Column(String(50), default="Bearer", nullable=False)
+    expires_at = Column(DateTime, nullable=False)  # When access token expires
+    scope = Column(String(500), nullable=True)  # Granted scopes
+    # User info from Kroger identity
+    kroger_user_id = Column(String(255), nullable=True)
+    kroger_email = Column(String(255), nullable=True)
+    kroger_name = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User")
+
+    __table_args__ = (UniqueConstraint("user_id", name="uq_user_kroger_auth"),)
+
+
+class KrogerAppCart(Base):
+    """In-app Kroger cart for managing products before sending to Kroger."""
+
+    __tablename__ = "kroger_app_cart"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    product_id = Column(String(100), nullable=False)
+    upc = Column(String(50), nullable=False)
+    product_name = Column(String(500), nullable=False)
+    brand = Column(String(200), nullable=True)
+    size = Column(String(100), nullable=True)
+    price = Column(Float, nullable=True)
+    image_url = Column(String(1000), nullable=True)
+    quantity = Column(Integer, nullable=False, default=1)
+    fulfillment_type = Column(String(20), nullable=False, default="PICKUP")  # PICKUP or DELIVERY
+    grocery_list_item_name = Column(String(255), nullable=True)  # Link to grocery list item
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User")
+

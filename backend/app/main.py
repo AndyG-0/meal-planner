@@ -17,6 +17,7 @@ from app.api.v1.endpoints import (
     features,
     grocery_lists,
     groups,
+    kroger,
     recipes,
 )
 from app.config import get_app_version, settings
@@ -81,6 +82,7 @@ app.include_router(admin.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ai.router, prefix=settings.API_V1_PREFIX)
 app.include_router(features.router, prefix=settings.API_V1_PREFIX)
 app.include_router(collections.router, prefix=settings.API_V1_PREFIX)
+app.include_router(kroger.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health")
